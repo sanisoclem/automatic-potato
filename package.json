@@ -1,0 +1,30 @@
+{
+  "name": "eb-app-ui",
+  "version": "0.1.0",
+  "author": "me@jerahmeelcosinas.net",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sanisoclem/eb-app-ui.git"
+  },
+  "private": true,
+  "scripts": {
+    "postinstall": "spago install",
+    "clean": "rm -rf node_modules output .spago dist/*.js *.lock .cache",
+    "build": "spago build",
+    "test": "spago test",
+    "bundle": "npm run build && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^3.14.1",
+    "autoprefixer": "^10.4.8",
+    "cssnano": "^5.1.12",
+    "postcss": "^8.4.16",
+    "purescript": "^0.15.4",
+    "spago": "^0.20.9",
+    "tailwindcss": "^3.1.7",
+    "vite": "^3.0.4"
+  }
+}
