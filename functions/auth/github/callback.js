@@ -1,25 +1,7 @@
-import { v4 } from 'uuid';
-import { sign } from 'jsonwebtoken';
+import * as jose from 'jose'
 
-export const onRequestGet = async ({ env, request }) => {
-  const clientId = env.AUTH_GITHUB_CLIENT_ID;
-  const clientSecret = env.AUTH_GITHUB_CLIENT_SECRET;
-  const callbackUri = env.AUTH_GITHUB_CALLBACK_URI;
-  const url = new URL(request.url);
-
-  if (!url.searchParams.has('state') || !url.searchParams.has('code')) {
-    return new Response("Invalid auth callback", { status: 400 });
-  }
-  const state = url.searchParams.get('state');
-  const code = url.searchParams.get('code');
-
-  const savedState = await env.EB.get(`auth:github:${state}`);
-
-  if (state !== savedState) {
-    return new Response("Invalid auth callback", { status: 400 });
-  }
-jsonwebtoken
-  const tokenResp = await fetch('https://github.com/login/oauth/access_token?' + new URLSearchParams({
+const getAccessToken = async ({ clientId, clientSecret, callbackUri, code }) => {
+  const resp = await fetch('https://github.com/login/oauth/access_token?' + new URLSearchParams({
     client_id: clientId,
     client_secret: clientSecret,
     code,
@@ -30,19 +12,47 @@ jsonwebtoken
       'Accept': 'application/json'
     })
   });
-  const tokenData = await tokenResp.json();
+  return await resp.json();
+}
 
+const getUserInfo = async({ tokenType, token }) => {
   const userResp = await fetch('https://api.github.com/user', {
     headers: new Headers({
       'Accept': 'application/json',
-      'Authorization': `${tokenData.token_type} ${tokenData.access_token}`,
+      'Authorization': `${tokenType} ${token}`,
       'User-Agent': 'Empire Builder'
     })
   });
-  const userData = await userResp.json();
+  return await userResp.json();
+}
 
+export const onRequestGet = async ({ env, request }) => {
+  const clientId = env.AUTH_GITHUB_CLIENT_ID;
+  const clientSecret = env.AUTH_GITHUB_CLIENT_SECRET;
+  const callbackUri = env.AUTH_GITHUB_CALLBACK_URI;
+  const signingKey = env.AUTH_JWT_PRIVATE_KEY;
+  const url = new URL(request.url);
+
+  if (!url.searchParams.has('state') || !url.searchParams.has('code')) {
+    return new Response("Invalid auth callback", { status: 400 });
+  }
+  const state = url.searchParams.get('state');
+  const code = url.searchParams.get('code');
+  const savedState = await env.EB.get(`auth:github:${state}`);
+
+  if (state !== savedState) {
+    return new Response("Invalid auth callback", { status: 400 });
+  }
+
+  const tokenData = await getAccessToken({ clientId, clientSecret, callbackUri, code });
+  const userData = await getUserInfo({ token: tokenData.access_token, tokenType: tokenData.token_type })
+
+  // TODO: create a auth provider agnostic user
+  // this is good for now, since KV isn't a good match for this (and I'll probably rewrite this in purs)
+  // a single durable object could work
+  // or an actual db (surreal?!?!?!)
   const userDoc = {
-    userId: v4().replace('-',''),
+    userId: userData.id,
     name: userData.name,
     providers: {
       github: {
@@ -54,10 +64,14 @@ jsonwebtoken
 
   await env.EB.put(`user:${userDoc.userId}`, JSON.stringify(userDoc));
 
-  // create jwt?
+  const token = await new jose.SignJWT({ 'eb:beta': userData.id === 758633 })
+  .setSubject(userDoc.userId)
+  .setIssuer(env.AUTH_JWT_ISSUER)
+  .setAudience(env.AUTH_JWT_AUDIENCE)
+  .setProtectedHeader({ alg: 'ES384' })
+  .setExpirationTime('2h')
+  .sign(await jose.importPKCS8(signingKey, 'ES384'))
 
-  return new Response(JSON.stringify({
-    user,
-    data
-  }));
+  // TODO:
+  return new Response(token);
 }
