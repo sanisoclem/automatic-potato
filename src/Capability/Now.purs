@@ -2,8 +2,7 @@ module AP.Capability.Now where
 
 import Prelude
 
-import AP.Data.Instant (Instant)
-import AP.Data.Instant (fromStdInstant)
+import AP.Data.Instant (Instant, fromStdInstant)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
 import Data.DateTime (Date, DateTime, Time)
 import Effect.Class (class MonadEffect, liftEffect)

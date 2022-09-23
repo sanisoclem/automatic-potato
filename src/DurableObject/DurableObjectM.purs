@@ -4,7 +4,6 @@ import Prelude
 
 import AP.Capability.Fetch (class MonadFetchRequest)
 import AP.Capability.Has (class HasLens, getState)
-import AP.Capability.Now (class MonadNow)
 import AP.Capability.Storage.Cf (class MonadCfStorage, class MonadCfStorageBatch)
 import AP.Data.Fetch (RequestMethod(..))
 import AP.Foreign.DurableObject (DurableObjectRequest, DurableObjectState, doBatchState, dodeleteDurableState, dogetDurableState, dogetDurableStateByPrefix, doputDurableState, doRequestGetBody, doRequestGetMethod, doRequestGetParam, doRequestGetPath, mkBatchedPut)
