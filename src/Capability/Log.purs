@@ -2,14 +2,18 @@ module AP.Capability.Log where
 
 import Prelude
 
-import Control.Monad.Trans.Class (lift)
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+
 import AP.Capability.Now (class MonadNow, nowDateTime)
 import AP.Data.Log (Log, LogLevel(..), mkLog)
+import Control.Monad.Trans.Class (class MonadTrans, lift)
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..))
 
 class Monad m <= MonadLog m where
   logMessage :: Log -> m Unit
+
+instance (MonadTrans t, MonadLog m, Monad (t m)) => MonadLog (t m) where
+  logMessage = lift <<< logMessage
 
 log :: forall m. MonadLog m => MonadNow m => LogLevel -> String -> m Unit
 log level msg = do

@@ -3,14 +3,14 @@ module AP.Capability.Outbox where
 import Prelude
 
 import AP.Capability.Storage.Transactional (class MonadTransactionalStorage, batchputDurableState, batchtryGetDurableState)
+import AP.Data.Utility (convertJsonErrorToError)
 import Control.Monad.Error.Class (class MonadThrow, liftEither)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
-import Data.Argonaut (Json, decodeJson, encodeJson, printJsonDecodeError, stringify)
+import Data.Argonaut (Json, decodeJson, encodeJson, stringify)
 import Data.Array (cons)
-import Data.Bifunctor (lmap)
 import Data.Either (Either)
 import Data.Maybe (fromMaybe)
-import Effect.Exception (Error, error)
+import Effect.Exception (Error)
 
 class Monad m <= MonadOutbox e m where
   queue :: e -> m Unit
@@ -27,7 +27,7 @@ type OutboxDocument = Array String
 instance (OutboxEvent e, MonadTransactionalStorage m, Monad m, MonadThrow Error m) => MonadOutbox e m where
   queue evt = do
     obJson <- batchtryGetDurableState outboxDocumentId
-    (ob :: OutboxDocument) <- fromMaybe (pure []) (liftEither <<< lmap (error <<< printJsonDecodeError) <<< decodeJson <$> obJson)
+    (ob :: OutboxDocument) <- fromMaybe (pure []) (liftEither <<< convertJsonErrorToError <<< decodeJson <$> obJson)
     batchputDurableState outboxDocumentId $ encodeJson (cons (stringify <<< encodeEvent $ evt) ob)
     pure unit
 else instance monadOutboxMonadTrans :: (Monad (t m), MonadOutbox e m, MonadTrans t) => MonadOutbox e (t m) where

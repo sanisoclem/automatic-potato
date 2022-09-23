@@ -4,10 +4,9 @@ import Prelude
 
 import AP.Capability.Storage.Database (class DatabaseDocument, class DatabaseDocumentId, class DatabaseId, class DocumentId)
 import AP.Data.Instant (Instant)
-import Data.Argonaut (decodeJson, encodeJson, printJsonDecodeError)
-import Data.Bifunctor (lmap)
+import AP.Data.Utility (convertJsonErrorToError)
+import Data.Argonaut (decodeJson, encodeJson)
 import Data.Maybe (Maybe(..))
-import Effect.Exception (error)
 import Safe.Coerce (coerce)
 
 data BudgetDatabaseId
@@ -36,5 +35,5 @@ budgetSummaryDocument :: BudgetSummaryRecord -> BudgetSummaryDocument
 budgetSummaryDocument = coerce
 instance DocumentId BudgetSummaryDocument BudgetSummaryId
 instance DatabaseDocument BudgetSummaryDocument where
-  decodeDocument json = lmap (error <<< printJsonDecodeError) <<< map BudgetSummaryDocument $ decodeJson json
+  decodeDocument json = convertJsonErrorToError <<< map BudgetSummaryDocument $ decodeJson json
   encodeDocument (BudgetSummaryDocument x) = encodeJson x

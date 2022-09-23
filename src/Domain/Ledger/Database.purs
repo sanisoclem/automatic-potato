@@ -5,14 +5,13 @@ import Prelude
 import AP.Capability.Storage.Database (class DatabaseDocument, class DatabaseDocumentId, class DatabaseId, class DatabaseIndex, class DocumentCollection, class DocumentId, class IndexedDocument, getIdPrefix)
 import AP.Data.Instant (Instant, unInstant)
 import AP.Data.Money (Money, zeroMoney)
+import AP.Data.Utility (convertJsonErrorToError)
 import AP.Domain.Ledger.Identifiers (AccountId, AccountType, BalanceId, Denomination, LedgerId, TransactionId, accountId, balanceId, ledgerId, transactionId, unAccountId, unTransactionId)
 import Control.Alternative ((<|>))
-import Data.Argonaut (decodeJson, encodeJson, printJsonDecodeError)
-import Data.Bifunctor (lmap)
+import Data.Argonaut (decodeJson, encodeJson)
 import Data.Map (Map, empty, singleton)
 import Data.Maybe (Maybe(..))
 import Data.String (Pattern(..), stripPrefix)
-import Effect.Exception (error)
 import Safe.Coerce (coerce)
 import Type.Prelude (Proxy(..))
 
@@ -76,7 +75,7 @@ ledgerDocument :: LedgerDocumentRecord -> LedgerDocument
 ledgerDocument = coerce
 instance DocumentId LedgerDocument LedgerId
 instance DatabaseDocument LedgerDocument where
-  decodeDocument json = lmap (error <<< printJsonDecodeError) <<< map LedgerDocument $ decodeJson json
+  decodeDocument json = convertJsonErrorToError <<< map LedgerDocument $ decodeJson json
   encodeDocument (LedgerDocument ledger) = encodeJson ledger
 
 type LedgerBalanceDocumentRecord =
@@ -92,7 +91,7 @@ ledgerBalanceDocument :: LedgerBalanceDocumentRecord -> LedgerBalanceDocument
 ledgerBalanceDocument = coerce
 instance DocumentId LedgerBalanceDocument BalanceId
 instance DatabaseDocument LedgerBalanceDocument where
-  decodeDocument json = lmap (error <<< printJsonDecodeError) <<< map LedgerBalanceDocument $ decodeJson json
+  decodeDocument json = convertJsonErrorToError <<< map LedgerBalanceDocument $ decodeJson json
   encodeDocument (LedgerBalanceDocument ledger) = encodeJson ledger
 
 type AccountDocumentRecord =
@@ -109,7 +108,7 @@ accountDocument :: AccountDocumentRecord -> AccountDocument
 accountDocument = coerce
 instance DocumentId AccountDocument AccountId
 instance DatabaseDocument AccountDocument where
-  decodeDocument json = lmap (error <<< printJsonDecodeError) <<< map AccountDocument $ decodeJson json
+  decodeDocument json = convertJsonErrorToError <<< map AccountDocument $ decodeJson json
   encodeDocument (AccountDocument acct) = encodeJson acct
 instance DocumentCollection AccountDocument where
   getIdPrefix _ = "acct/"
@@ -129,7 +128,7 @@ transactionDocument :: TransactionDocumentRecord -> TransactionDocument
 transactionDocument = coerce
 instance DocumentId TransactionDocument TransactionId
 instance DatabaseDocument TransactionDocument where
-  decodeDocument json = lmap (error <<< printJsonDecodeError) <<< map TransactionDocument $ decodeJson json
+  decodeDocument json = convertJsonErrorToError <<< map TransactionDocument $ decodeJson json
   encodeDocument (TransactionDocument tx) = encodeJson tx
 instance IndexedDocument TransactionDocument LedgerIndexes where
   getRangeIndexes (TransactionDocument doc) = singleton TransactionSortKey $ unInstant doc.date

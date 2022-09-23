@@ -1,4 +1,4 @@
-import { main } from "./output/Main";
+import { main } from "./output/AP.UI.Main";
 
 import './main.css';
 

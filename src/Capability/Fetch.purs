@@ -3,9 +3,10 @@ module AP.Capability.Fetch where
 import Prelude
 
 import AP.Data.Fetch (RequestMethod)
+import AP.Data.Utility (convertJsonErrorToError)
 import Control.Bind (bindFlipped)
 import Control.Monad.Error.Class (class MonadThrow, liftEither)
-import Data.Argonaut (class DecodeJson, decodeJson, jsonParser, printJsonDecodeError)
+import Data.Argonaut (class DecodeJson, decodeJson, jsonParser)
 import Data.Bifunctor (lmap)
 import Data.Either (note)
 import Data.Int as Int
@@ -23,7 +24,7 @@ getBodyJson :: ∀ a m. MonadFetchRequest m => MonadThrow Error m => DecodeJson 
 getBodyJson = do
   body <- getBodyString
   parsed <- liftEither <<< lmap error <<< jsonParser $ body
-  liftEither <<< lmap (error <<< printJsonDecodeError) <<< decodeJson $ parsed
+  liftEither <<< convertJsonErrorToError <<< decodeJson $ parsed
 
 getParam ::  ∀ m. MonadFetchRequest m => MonadThrow Error m => String -> m String
 getParam key = do

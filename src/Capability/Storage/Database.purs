@@ -2,9 +2,11 @@ module AP.Capability.Storage.Database where
 
 import Prelude
 
+import AP.Capability.Storage.Cf (class MonadCfStorage, getDurableStateByPrefix, tryGetDurableState)
+import AP.Capability.Storage.Transactional (class MonadTransactionalStorage, batchdeleteDurableState, batchgetDurableState, batchputDurableState, batchtryGetDurableState)
+import AP.Data.Utility (convertJsonErrorToError)
 import Control.Monad.Error.Class (class MonadThrow, liftEither)
-import Data.Argonaut (Json, decodeJson, encodeJson, printJsonDecodeError)
-import Data.Bifunctor (lmap)
+import Data.Argonaut (Json, decodeJson, encodeJson)
 import Data.Array (delete, elem, foldl, insert, singleton, union)
 import Data.Either (Either, note)
 import Data.Filterable (filterMap)
@@ -12,8 +14,6 @@ import Data.FunctorWithIndex (mapWithIndex)
 import Data.Map (Map, alter, empty, foldSubmap, intersectionWith)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (sequence)
-import AP.Capability.Storage.Cf (class MonadCfStorage, getDurableStateByPrefix, tryGetDurableState)
-import AP.Capability.Storage.Transactional (class MonadTransactionalStorage, batchdeleteDurableState, batchgetDurableState, batchputDurableState, batchtryGetDurableState)
 import Effect.Exception (Error, error)
 import Type.Prelude (Proxy(..))
 
@@ -197,7 +197,7 @@ instance (MonadTransactionalStorage m, MonadThrow Error m, DatabaseId dbId) => M
 instance (MonadCfStorage m, MonadThrow Error m, DatabaseId dbId, DatabaseIndex idx, MonadReadonlyDatabase dbId m) => MonadReadonlyIndexedDatabase dbId idx m where
   getFromRangeIndexReadonly index min max = do
     json <- tryGetDurableState $ getFullIndexId index
-    (indexDoc :: RangeIndexDocument) <- fromMaybe (pure empty) $ (liftEither <<< lmap (error <<< printJsonDecodeError) <<< decodeJson) <$> json
+    (indexDoc :: RangeIndexDocument) <- fromMaybe (pure empty) $ (liftEither <<< convertJsonErrorToError <<< decodeJson) <$> json
     let (ids :: Array String) = foldSubmap min max (\_k v -> v) indexDoc
     let (dbIds :: Array dbId) = filterMap dbIdFromString ids
     sequence $ getDocumentReadonly <$> filterMap tryUnwrapDocumentId dbIds
@@ -206,7 +206,7 @@ instance (MonadCfStorage m, MonadThrow Error m, DatabaseId dbId, DatabaseIndex i
 instance (MonadTransactionalStorage m, MonadThrow Error m, DatabaseId dbId, DatabaseIndex idx, MonadDatabase dbId m) => MonadIndexedDatabase dbId idx m where
   getFromRangeIndex :: forall doc docId. DatabaseDocument doc => DatabaseDocumentId dbId docId => DocumentId doc docId => idx -> Maybe Number -> Maybe Number -> m (Array doc)
   getFromRangeIndex index min max = do
-    (indexDoc :: RangeIndexDocument) <- liftEither <=< map (lmap (error <<< printJsonDecodeError) <<< decodeJson) <<< batchgetDurableState $ getFullIndexId index
+    (indexDoc :: RangeIndexDocument) <- liftEither <=< map (convertJsonErrorToError <<< decodeJson) <<< batchgetDurableState $ getFullIndexId index
     let (ids :: Array String) = foldSubmap min max (\_k v -> v) indexDoc
     let (dbIds :: Array dbId) = filterMap dbIdFromString ids
     let (docIds :: Array docId) = filterMap tryUnwrapDocumentId dbIds
@@ -231,7 +231,7 @@ instance (MonadTransactionalStorage m, MonadThrow Error m, DatabaseId dbId, Data
         updateIndex docId idx updates = do
           let indexId = getFullIndexId idx
           maybState <- batchtryGetDurableState $ indexId
-          (maybIndexDoc :: Maybe RangeIndexDocument) <- sequence $ (liftEither <<< lmap (error <<< printJsonDecodeError) <<< decodeJson) <$> maybState
+          (maybIndexDoc :: Maybe RangeIndexDocument) <- sequence $ (liftEither <<< convertJsonErrorToError <<< decodeJson) <$> maybState
           let indexDoc = fromMaybe empty maybIndexDoc
           let updatedDoc = foldl (applyUpdates docId) indexDoc updates
           batchputDurableState indexId (encodeJson updatedDoc)
@@ -258,7 +258,7 @@ instance (MonadTransactionalStorage m, MonadThrow Error m, DatabaseId dbId, Data
           where
             removeFromIndex idToRemove idx v = do
               let indexId = getFullIndexId idx
-              (indexDoc :: RangeIndexDocument) <- liftEither <=< map (lmap (error <<< printJsonDecodeError) <<< decodeJson) <<< batchgetDurableState $ indexId
+              (indexDoc :: RangeIndexDocument) <- liftEither <=< map (convertJsonErrorToError <<< decodeJson) <<< batchgetDurableState $ indexId
               let updatedDoc = alter (removeAndDeleteIfEmpty idToRemove) v indexDoc
               batchputDurableState indexId (encodeJson updatedDoc)
             removeAndDeleteIfEmpty id = case _ of

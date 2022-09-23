@@ -1,0 +1,13 @@
+name: Publish Durable Object
+on:
+  push:
+    branches: ['master']
+deploy:
+  runs-on: ubuntu-latest
+  name: Deploy
+  steps:
+    - uses: actions/checkout@v2
+    - name: Publish
+      uses: cloudflare/wrangler-action@2.0.0
+      with:
+        apiToken: ${{ secrets.CF_API_TOKEN }}

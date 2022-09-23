@@ -25,6 +25,9 @@ mkInstant x = map Instant <<< StdInstant.instant <<< Milliseconds $ x
 unInstant :: Instant -> Number
 unInstant (Instant x) = unwrap <<< StdInstant.unInstant $ x
 
+fromStdInstant :: StdInstant.Instant -> Instant
+fromStdInstant = Instant
+
 now :: forall m. MonadEffect m => m Instant
 now = Instant <$> liftEffect E.now
 
