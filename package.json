@@ -15,6 +15,7 @@
     "test": "spago test",
     "bundle": "npm run build && vite build",
     "dev": "vite",
+    "wdev": "vite build --watch",
     "preview": "vite preview"
   },
   "devDependencies": {
@@ -22,6 +23,7 @@
     "autoprefixer": "^10.4.8",
     "cssnano": "^5.1.12",
     "decimal.js": "^10.4.1",
+    "jsonwebtoken": "^8.5.1",
     "postcss": "^8.4.16",
     "purescript": "^0.15.4",
     "spago": "^0.20.9",

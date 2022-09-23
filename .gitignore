@@ -23,3 +23,5 @@ dce-output
 
 # Dist
 dist
+
+.dev.vars

@@ -12,3 +12,6 @@ class Monad m <= MonadNavigateAbs m where
 
 instance (MonadTrans t, Monad (t m), MonadNavigate r m) => MonadNavigate r (t m) where
   navigate = lift <<< navigate
+
+instance (MonadTrans t, Monad (t m), MonadNavigateAbs m) => MonadNavigateAbs (t m) where
+  navigateAbs = lift <<< navigateAbs
