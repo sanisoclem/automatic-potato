@@ -2,15 +2,20 @@ module AP.UI.AppM where
 
 import Prelude
 
+import AP.Capability.ApiClient (class MonadApiClient)
 import AP.Capability.Log (class MonadLog)
-import AP.Capability.Navigate (class MonadNavigate, class MonadNavigateAbs, navigateAbs)
 import AP.Data.Log as Log
+import AP.UI.Capability.Navigate (class MonadNavigate, class MonadNavigateAbs)
 import AP.UI.Route (Route)
 import AP.UI.Route as Route
 import AP.UI.Store (Action, EnvironmentType(..), Store)
 import AP.UI.Store as Store
+import Affjax.ResponseFormat as AXRF
+import Affjax.Web as AX
+import Data.Argonaut (decodeJson, (.:))
+import Data.Either (hush)
 import Effect.Aff (Aff)
-import Effect.Aff.Class (class MonadAff)
+import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Foreign (unsafeToForeign)
@@ -50,3 +55,12 @@ instance MonadNavigate Route AppM where
 
 instance MonadNavigateAbs AppM where
   navigateAbs href = liftEffect $ setHref href =<< location =<< window
+
+instance MonadApiClient AppM where
+  getSession = do
+    let
+      decodeSession x = do
+        obj <- decodeJson x
+        obj .: "payload"
+    response <- liftAff $ AX.get AXRF.json ("/api/session")
+    pure  $ hush <<< decodeSession <<< _.body =<< hush response

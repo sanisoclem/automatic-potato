@@ -28,7 +28,7 @@ export const onRequestGet = async ({ env, request }) => {
     }));
   }
   catch {
-    return new Response(JSON.stringify({}));
+    return new Response(JSON.stringify(null));
   }
 }
 

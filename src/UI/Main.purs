@@ -2,11 +2,11 @@ module AP.UI.Main where
 
 import Prelude
 
-import Data.Maybe (Maybe(..))
 import AP.UI.AppM (runAppM)
 import AP.UI.Component.Router as Router
 import AP.UI.Route (routeCodec)
 import AP.UI.Store (EnvironmentType(..), Store)
+import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
 import Halogen (liftEffect)
@@ -18,8 +18,8 @@ import Routing.PushState (makeInterface, matchesWith)
 
 main :: Effect Unit
 main = HA.runHalogenAff do
-  body <- HA.awaitBody
   let envType = Dev
+  body <- HA.awaitBody
   psi <- liftEffect $ makeInterface
 
   let
@@ -27,12 +27,13 @@ main = HA.runHalogenAff do
     initialStore =
       { envType
       , psi
+      , session: Nothing
       }
 
   rootComponent <- runAppM initialStore Router.component
 
   halogenIO <- runUI rootComponent unit body
-  void $ liftEffect $ matchesWith (parse routeCodec) (handler halogenIO) psi
+  void <<< liftEffect $ matchesWith (parse routeCodec) (handler halogenIO) psi
 
   where
     handler halogenIO old new = when (old /= Just new) $ launchAff_ do

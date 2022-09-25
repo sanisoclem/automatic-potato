@@ -5,21 +5,19 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/sanisoclem/eb-app-ui.git"
+    "url": "git+https://github.com/sanisoclem/automatic-potato.git"
   },
   "private": true,
   "scripts": {
     "postinstall": "spago install",
     "clean": "rm -rf node_modules output .spago dist/*.js *.lock .cache",
-    "build": "spago build",
+    "build": "spago build && vite build",
     "test": "spago test",
-    "bundle": "npm run build && vite build",
     "dev": "vite",
     "wdev": "vite build --watch",
     "preview": "vite preview"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^3.14.1",
     "autoprefixer": "^10.4.8",
     "cssnano": "^5.1.12",
     "decimal.js": "^10.4.1",

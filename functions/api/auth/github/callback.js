@@ -64,7 +64,7 @@ export const onRequestGet = async ({ env, request }) => {
 
   await env.EB.put(`user:${userDoc.userId}`, JSON.stringify(userDoc));
 
-  const token = await new jose.SignJWT({ 'eb:beta': userData.id === 758633, 'name': userData.name })
+  const token = await new jose.SignJWT({ 'allow': userData.id === 758633, 'name': userData.name })
   .setSubject(userDoc.userId)
   .setIssuer(env.AUTH_JWT_ISSUER)
   .setAudience(env.AUTH_JWT_AUDIENCE)

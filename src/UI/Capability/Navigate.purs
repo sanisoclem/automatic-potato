@@ -1,4 +1,4 @@
-module AP.Capability.Navigate where
+module AP.UI.Capability.Navigate where
 
 import Prelude
 
