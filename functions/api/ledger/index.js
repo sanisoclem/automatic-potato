@@ -1,4 +1,4 @@
-export const onRequestPost = async ({ env }) => {
+export const onRequestPost = async ({ env, data }) => {
   const id = env.EB_LEDGER_DO.newUniqueId();
   var ledgerList = env.EB.get(`user:${data.auth.sub}:ledgers`, { type: "json" }) || [];
   ledgerList.push(id);
