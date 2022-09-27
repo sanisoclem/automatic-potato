@@ -79,6 +79,6 @@ export const onRequestGet = async ({ env, request }) => {
     return resp;
   }
   catch (err) {
-    return new Response(JSON.stringify(err));
+    return new Response(JSON.stringify(err.message));
   }
 }
