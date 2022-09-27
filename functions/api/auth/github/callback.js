@@ -33,46 +33,52 @@ export const onRequestGet = async ({ env, request }) => {
   const signingKey = env.AUTH_JWT_PRIVATE_KEY;
   const url = new URL(request.url);
 
-  if (!url.searchParams.has('state') || !url.searchParams.has('code')) {
-    return new Response("Invalid auth callback", { status: 400 });
-  }
-  const state = url.searchParams.get('state');
-  const code = url.searchParams.get('code');
-  const savedState = await env.EB.get(`auth:github:${state}`, { type: 'json' });
+  try
+  {
+    if (!url.searchParams.has('state') || !url.searchParams.has('code')) {
+      return new Response("Invalid auth callback", { status: 400 });
+    }
+    const state = url.searchParams.get('state');
+    const code = url.searchParams.get('code');
+    const savedState = await env.EB.get(`auth:github:${state}`, { type: 'json' });
 
-  if (savedState === null) {
-    return new Response("Invalid auth callback", { status: 400 });
-  }
+    if (savedState === null) {
+      return new Response("Invalid auth callback", { status: 400 });
+    }
 
-  const tokenData = await getAccessToken({ clientId, clientSecret, callbackUri, code });
-  const userData = await getUserInfo({ token: tokenData.access_token, tokenType: tokenData.token_type })
+    const tokenData = await getAccessToken({ clientId, clientSecret, callbackUri, code });
+    const userData = await getUserInfo({ token: tokenData.access_token, tokenType: tokenData.token_type })
 
-  // TODO: create an auth provider agnostic user
-  // this is good for now, since KV isn't a good match for this (and I'll probably rewrite this in purs)
-  // a single durable object could work
-  // or an actual db (surreal?!?!?!)
-  const userDoc = {
-    userId: userData.id,
-    name: userData.name,
-    providers: {
-      github: {
-        token: tokenData.access_token,
-        profile: userData
+    // TODO: create an auth provider agnostic user
+    // this is good for now, since KV isn't a good match for this (and I'll probably rewrite this in purs)
+    // a single durable object could work
+    // or an actual db (surreal?!?!?!)
+    const userDoc = {
+      userId: userData.id,
+      name: userData.name,
+      providers: {
+        github: {
+          token: tokenData.access_token,
+          profile: userData
+        }
       }
     }
+
+    await env.EB.put(`user:${userDoc.userId}`, JSON.stringify(userDoc));
+
+    const token = await new jose.SignJWT({ 'allow': userData.id === 758633, 'name': userData.name })
+    .setSubject(userDoc.userId)
+    .setIssuer(env.AUTH_JWT_ISSUER)
+    .setAudience(env.AUTH_JWT_AUDIENCE)
+    .setProtectedHeader({ alg: 'ES384' })
+    .setExpirationTime('2h')
+    .sign(await jose.importPKCS8(signingKey, 'ES384'))
+
+    const resp = Response.redirect(`${url.origin}${savedState.returnUrl}`);
+    resp.headers.set('Set-Cookie', `authToken=${token}; path=/api; secure; HttpOnly; SameSite=Strict`)
+    return resp;
   }
-
-  await env.EB.put(`user:${userDoc.userId}`, JSON.stringify(userDoc));
-
-  const token = await new jose.SignJWT({ 'allow': userData.id === 758633, 'name': userData.name })
-  .setSubject(userDoc.userId)
-  .setIssuer(env.AUTH_JWT_ISSUER)
-  .setAudience(env.AUTH_JWT_AUDIENCE)
-  .setProtectedHeader({ alg: 'ES384' })
-  .setExpirationTime('2h')
-  .sign(await jose.importPKCS8(signingKey, 'ES384'))
-
-  const resp = Response.redirect(`${url.origin}${savedState.returnUrl}`);
-  resp.headers.set('Set-Cookie', `authToken=${token}; path=/api; secure; HttpOnly; SameSite=Strict`)
-  return resp;
+  catch (err) {
+    return new Response(JSON.stringify(err));
+  }
 }
