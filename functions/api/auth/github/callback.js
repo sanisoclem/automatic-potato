@@ -93,6 +93,7 @@ export const onRequestGet = async ({ env, request }) => {
     .sign(await jose.importPKCS8(signingKey, "ES384"));
 
   return new Response(null, {
+    status: 302,
     headers: {
       Location: `${url.origin}${savedState.returnUrl}`,
       "Set-Cookie": `authToken=${token}; path=/api; secure; HttpOnly; SameSite=Strict`,
