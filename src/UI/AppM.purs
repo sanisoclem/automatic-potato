@@ -58,9 +58,5 @@ instance MonadNavigateAbs AppM where
 
 instance MonadApiClient AppM where
   getSession = do
-    let
-      decodeSession x = do
-        obj <- decodeJson x
-        obj .: "payload"
     response <- liftAff $ AX.get AXRF.json ("/api/session")
-    pure  $ hush <<< decodeSession <<< _.body =<< hush response
+    pure  $ hush <<< decodeJson <<< _.body =<< hush response
