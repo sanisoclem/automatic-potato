@@ -1,14 +1,14 @@
-module AP.UI.Page.Dashboard
-  ( component
+module AP.UI.Component.Home
+  ( homeComponent
   )
   where
 
 import Prelude
 
+import Data.Maybe (Maybe(..))
 import AP.Capability.Log (class MonadLog, logWarn)
 import AP.Capability.Now (class MonadNow)
 import AP.UI.Component.HTML.Utils (css)
-import Data.Maybe (Maybe(..))
 import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
@@ -20,12 +20,12 @@ data Action
   = Increment
   | Initialize
 
-component
+homeComponent
   :: forall q i o m
    . MonadLog m
   => MonadNow m
   => H.Component q i o m
-component =
+homeComponent =
   H.mkComponent
     { initialState: \_ -> { count: 0 }
     , render
@@ -41,7 +41,7 @@ render state =
     [ HH.div
       [ css "mx-auto p-4 gap-y-8 max-w-md flex flex-col justify-center items-center" ]
       [ HH.h2_
-          [ HH.text "Dashboard!!!"]
+          [ HH.text "Purescript!!!"]
       , HH.p_
           [ HH.text $ "You clicked " <> show state.count <> " times" ]
       , HH.button

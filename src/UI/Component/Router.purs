@@ -7,14 +7,12 @@ import AP.Capability.Log (class MonadLog)
 import AP.Capability.Now (class MonadNow)
 import AP.UI.Capability.Navigate (class MonadNavigate)
 import AP.UI.Component.HTML.Utils (css)
-import AP.UI.Page.Dashboard as Dashboard
-import AP.UI.Page.Home as Home
-import AP.UI.Route (Route(..))
+import AP.UI.Component.Home as Component
+import AP.UI.Component.Ledger.Router as Component.Ledger
+import AP.UI.Route as Routes
 import AP.UI.Store (EnvironmentType)
 import AP.UI.Store as Store
-
 import Control.Monad.Trans.Class (lift)
-
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
 import Effect.Aff.Class (class MonadAff)
@@ -27,13 +25,16 @@ import Halogen.Store.Select (selectAll)
 import Routing.PushState (PushStateInterface)
 import Type.Proxy (Proxy(..))
 
-data Query a = Navigate Route a
+data Query a = Navigate Routes.Route a
+
+data Test = Tes2t String String
+
 type Input = Unit
 
 type OpaqueSlot slot = forall query. H.Slot query Void slot
 
 type State =
-  { route :: Maybe Route
+  { route :: Maybe Routes.Route
   , psi :: PushStateInterface
   , session :: Maybe Session
   , env :: EnvironmentType
@@ -41,14 +42,13 @@ type State =
 deriveState :: Connected Store.Store Input -> State
 deriveState { context } = { route: Nothing, psi: context.psi, session: context.session, env: context.envType }
 
-
 data Action
   = Initialize
   | Receive (Connected Store.Store Input)
 
 type ChildSlots =
   ( home :: OpaqueSlot Unit
-  , dashboard :: OpaqueSlot Unit
+  , ledger :: OpaqueSlot Unit
   )
 
 component
@@ -58,7 +58,7 @@ component
   => MonadStore Store.Action Store.Store m
   => MonadNow m
   => MonadLog m
-  => MonadNavigate Route m
+  => MonadNavigate Routes.Route m
   => H.Component Query Input Void m
 component = connect selectAll $ H.mkComponent
   { initialState: deriveState
@@ -103,10 +103,10 @@ component = connect selectAll $ H.mkComponent
             HH.div_
               [ HH.text $ "Logged in as: " <> s.name
               , case r of
-                Home ->
-                  HH.slot_ (Proxy :: _ "home") unit Home.component unit
-                Dashboard ->
-                  HH.slot_ (Proxy :: _ "dashboard") unit Dashboard.component unit
+                Routes.Home ->
+                  HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit
+                Routes.Ledger l ->
+                  HH.slot_ (Proxy :: _ "ledger") unit Component.Ledger.routerComponent l
               ]
           Nothing ->
             HH.div
