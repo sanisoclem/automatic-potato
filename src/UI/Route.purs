@@ -3,13 +3,13 @@ module AP.UI.Route where
 import Prelude hiding ((/))
 
 import Data.Generic.Rep (class Generic)
-import Routing.Duplex (RouteDuplex', root, segment, string)
+import Routing.Duplex (RouteDuplex', print, root, segment, string)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
 
 data Route
   = Home
-  | Ledger LedgerRoute
+  | Ledger String LedgerRoute
 
 derive instance Generic Route _
 derive instance Eq Route
@@ -32,17 +32,8 @@ ledgerRouteCodec = sum
 routeCodec :: RouteDuplex' Route
 routeCodec = root $ sum
   { "Home": noArgs
-  , "Ledger": "ledger" / ledgerRouteCodec
+  , "Ledger": "ledger" / string segment / ledgerRouteCodec
   }
 
-data Test
-  = Test1
-  | Test2 String
-
-derive instance Generic Test _
-
-testCodec :: RouteDuplex' Test
-testCodec = root $ sum
-  { "Test1": noArgs
-  , "Test2": "tae" / string segment / "edit"
-  }
+toHref :: Route -> String
+toHref = print routeCodec

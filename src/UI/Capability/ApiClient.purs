@@ -11,8 +11,14 @@ type Session =
   , exp :: Int
   }
 
+type Ledger =
+  { ledgerId :: String
+  , name :: String }
+
 class Monad m <= MonadApiClient m where
   getSession :: m (Maybe Session)
+  getLedgers :: m (Array Ledger)
 
 instance (MonadTrans t, MonadApiClient m, Monad (t m)) => MonadApiClient (t m) where
   getSession = lift getSession
+  getLedgers = lift getLedgers

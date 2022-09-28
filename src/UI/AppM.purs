@@ -12,9 +12,9 @@ import AP.UI.Store (Action, EnvironmentType(..), Store)
 import AP.UI.Store as Store
 import Affjax.ResponseFormat as AXRF
 import Affjax.Web as AX
-import Data.Argonaut (decodeJson, (.:))
+import Data.Argonaut (decodeJson)
 import Data.Either (hush)
-import Effect.Aff (Aff)
+import Effect.Aff (Aff, Milliseconds(..), delay)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -60,3 +60,10 @@ instance MonadApiClient AppM where
   getSession = do
     response <- liftAff $ AX.get AXRF.json ("/api/session")
     pure  $ hush <<< decodeJson <<< _.body =<< hush response
+  getLedgers = do
+    liftAff <<< delay $ Milliseconds 1000.0
+    pure
+      [ { ledgerId: "emptyLedger", name: "Empty Ledger"}
+      , { ledgerId: "simpleLedger", name: "Simple Ledger"}
+      , { ledgerId: "complexLedger", name: "Complex Ledger"}
+      ]

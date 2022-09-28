@@ -11,11 +11,14 @@ import Halogen as H
 import Halogen.HTML as HH
 import Type.Proxy (Proxy(..))
 
-type Input = Routes.LedgerRoute
+type Input =
+  { ledgerId :: String
+  , route :: Routes.LedgerRoute
+  }
 
 type OpaqueSlot slot = forall query. H.Slot query Void slot
 
-type State = Routes.LedgerRoute
+type State = Input
 
 data Action
   = Receive Input
@@ -44,7 +47,7 @@ routerComponent = H.mkComponent
       H.put x
 
   render :: State -> H.ComponentHTML Action ChildSlots m
-  render = case _ of
+  render state = case state.route of
     Routes.LedgerDashboard ->
       HH.slot_ (Proxy :: _ "dashboard") unit Component.Ledger.dashboardComponent unit
     Routes.AccountLedger accountId ->

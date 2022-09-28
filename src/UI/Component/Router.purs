@@ -9,6 +9,7 @@ import AP.UI.Capability.Navigate (class MonadNavigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Home as Component
 import AP.UI.Component.Ledger.Router as Component.Ledger
+import AP.UI.Route (toHref)
 import AP.UI.Route as Routes
 import AP.UI.Store (EnvironmentType)
 import AP.UI.Store as Store
@@ -94,25 +95,21 @@ component = connect selectAll $ H.mkComponent
       pure (Just a)
 
   render :: State -> H.ComponentHTML Action ChildSlots m
-  render { route, session, env } = case session of
-    Just s ->
+  render { route, session } = case session of
+    Just _ ->
       HH.div
-        [ css "bg-gray-800 min-h-screen w-screen text-white" ]
+        [ css "bg-gray-800 text-white" ]
         [ case route of
-          Just r ->
-            HH.div_
-              [ HH.text $ "Logged in as: " <> s.name
-              , case r of
-                Routes.Home ->
-                  HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit
-                Routes.Ledger l ->
-                  HH.slot_ (Proxy :: _ "ledger") unit Component.Ledger.routerComponent l
-              ]
+          Just r -> case r of
+            Routes.Home ->
+              HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit
+            Routes.Ledger ledgerId l ->
+              HH.slot_ (Proxy :: _ "ledger") unit Component.Ledger.routerComponent { ledgerId, route: l }
           Nothing ->
             HH.div
               [ css "mx-auto max-w-md text-center p-20"]
               [ HH.h1_ [ HH.text "Not Found" ]
-              , HH.a [ HP.href "/" ] [ HH.text "Home"]
+              , HH.a [ HP.href $ toHref Routes.Home ] [ HH.text "Home"]
               ]
         ]
 
