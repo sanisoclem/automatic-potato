@@ -37,6 +37,7 @@ to generate this file without the comments in this block.
   , "foreign-object"
   , "formatters"
   , "halogen"
+  , "halogen-formless"
   , "halogen-store"
   , "integers"
   , "lists"
