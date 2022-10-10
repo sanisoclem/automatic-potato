@@ -14,6 +14,7 @@ import AP.UI.Route as Routes
 import AP.UI.Store (EnvironmentType)
 import AP.UI.Store as Store
 import Control.Monad.Trans.Class (lift)
+import Data.Const (Const)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
 import Effect.Aff.Class (class MonadAff)
@@ -48,7 +49,7 @@ data Action
   | Receive (Connected Store.Store Input)
 
 type ChildSlots =
-  ( home :: OpaqueSlot Unit
+  ( home :: H.Slot (Const Void) Unit Unit
   , ledger :: OpaqueSlot Unit
   )
 

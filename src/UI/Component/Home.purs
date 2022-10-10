@@ -14,6 +14,7 @@ import Data.Array as Array
 import Data.Const (Const)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
+import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
@@ -22,7 +23,7 @@ import Halogen.HTML.Properties as HP
 
 type Form :: (Type -> Type -> Type -> Type) -> Row Type
 type Form f =
-  ( name     :: f String String String
+  ( name     :: f String V.FormError String
   --              input  error  output
   )
 
@@ -55,6 +56,7 @@ type FormlessAction = F.FormlessAction (Form F.FieldState)
 homeComponent
   :: forall m
    . MonadApiClient m
+  => MonadAff m
   => MonadNavigate Routes.Route m
   => H.Component Query Input Output m
 homeComponent =
@@ -81,11 +83,15 @@ homeComponent =
       x -> s
     NewLedger x -> do
       pure unit
-    Receive ctx -> H.modify_ _ { context = ctx }
+    Receive ctx -> H.modify_ _ { form = ctx }
     Eval action -> F.eval action
-  handleQuery :: forall a. Query a -> H.HalogenM State Action () (F.FormOutput (Form F.FieldState) Output) m (Maybe a)
+  handleQuery :: forall a. F.FormQuery Query _ _ _ a -> H.HalogenM _ _ _ _ m (Maybe a)
   handleQuery =
-    F.handleSubmitValidate F.raise F.validate
+    let
+      onSubmit x = do
+        F.raise unit
+    in
+    F.handleSubmitValidate onSubmit F.validate
       { name: V.required >=> V.minLength 3
       }
 
@@ -118,7 +124,7 @@ homeComponent =
                       , HE.onBlur state.form.actions.name.handleBlur
                       ]
                   , case state.form.fields.name.result of
-                      Just (Left error) -> HH.text error
+                      Just (Left error) -> HH.text $ V.errorToString error
                       _ -> HH.text ""
                   ]
                 else
