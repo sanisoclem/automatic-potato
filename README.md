@@ -4,14 +4,17 @@ Example fullstack purescript app using: purescript + halogen + cloudflare + tail
 
 
 ```bash
+# run everything
+$ pnpm start
+
 # compile purescript
-$ spago build --watch
+$ pnpm dev:spago
 
-# run worker locally - KV namespace must exist, will start vite and proxy it
-$  wrangler pages dev --kv EB --port 7448 -- pnpm dev
+# run durable objects worker (requires wrangler >2.0.25, see: https://github.com/cloudflare/wrangler2/pull/1641)
+$ pnpm dev:data
 
-# run dev server - runs UI only, proxying requests will not work due to the redirects/callback
-$ pnpm dev
+# run pages locally - KV namespace must exist, will start vite and proxy it
+$  pnpm dev:pages
 ```
 
 

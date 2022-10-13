@@ -21,8 +21,8 @@ type Response =
   , body :: Json
   }
 
-jsonResponse :: ∀ a. (EncodeJson a) => Int -> a -> Response
-jsonResponse code = { statusCode: _, body: _ } code <<< encodeJson
+jsonResponse :: Int -> Json -> Response
+jsonResponse = { statusCode: _, body: _ }
 
 messageResponse :: Int -> String -> Response
 messageResponse code msg = { statusCode: _, body: _ } code $ json

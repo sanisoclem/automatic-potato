@@ -14,7 +14,10 @@
     "build": "spago build && vite build",
     "test": "spago test",
     "dev": "vite",
-    "wdev": "vite build --watch",
+    "dev:data": "cd data && wrangler dev --local",
+    "dev:pages": "wrangler pages dev --do --kv EB --do EB_DATA=Ledger@data --port 7448 -- pnpm dev",
+    "dev:spago": "spago build --watch",
+    "start": "npx concurrently \"npm:dev:*\"",
     "preview": "vite preview"
   },
   "devDependencies": {

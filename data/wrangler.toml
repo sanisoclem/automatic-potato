@@ -1,4 +1,4 @@
-name = "automatic-potato"
+name = "data"
 workers_dev = true
 main = "./index.js"
 compatibility_date = "2022-07-04"

@@ -9,8 +9,9 @@ import AP.Domain.Ledger.Command (LedgerCommand(..))
 import AP.Domain.Ledger.Event (LedgerEvent(..))
 import AP.Domain.Ledger.Identifiers (accountId, transactionId)
 import AP.Domain.Ledger.LedgerDb (class MonadLedgerDb, class MonadLedgerReadonlyDb, deleteTransaction, ensureAccountExists, getAccount, getAccountsReadonly, getBalancesReadonly, getLedger, getLedgerReadonly, getTransaction, getTransactionsReadonly, postTransaction, putAccount, putLedger, putTransaction, updateBalances)
-import AP.Domain.Ledger.Query (LedgerQuery(..), LedgerQueryResult(..))
+import AP.Domain.Ledger.Query (LedgerQuery(..))
 import Control.Monad.Error.Class (class MonadThrow)
+import Data.Argonaut (Json, encodeJson)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Traversable (sequence)
 import Effect.Class (class MonadEffect)
@@ -99,17 +100,17 @@ handleQuery
    . MonadLedgerReadonlyDb m
   => MonadThrow Error m
   => LedgerQuery
-  -> m LedgerQueryResult
+  -> m Json
 handleQuery = case _ of
   GetLedgerV1 -> do
     ledger <- getLedgerReadonly
     accounts <- getAccountsReadonly
     pure $
-      GetLedgerResultV1
+      encodeJson
         { name: fromMaybe "" (ledger <#> _.name)
         , accounts: accounts
         }
   GetBalancesV1 -> do
-    GetBalancesResultV1 <$> getBalancesReadonly
+    encodeJson <$> getBalancesReadonly
   GetTransactionsV1 x -> do
-    GetTransactionsResultV1 <$> getTransactionsReadonly x.from x.to
+    encodeJson <$> getTransactionsReadonly x.from x.to

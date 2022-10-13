@@ -28,11 +28,6 @@ main = HA.runHalogenAff do
       { envType
       , psi
       , session: Nothing
-      , debug:
-        [ { ledgerId: "emptyLedger", name: "Empty Ledger"}
-        , { ledgerId: "simpleLedger", name: "Simple Ledger"}
-        , { ledgerId: "complexLedger", name: "Complex Ledger"}
-        ]
       }
 
   rootComponent <- runAppM initialStore Router.component

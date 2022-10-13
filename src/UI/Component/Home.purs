@@ -10,6 +10,7 @@ import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Form.Validation as V
 import AP.UI.Part.Button (btnSubmit_, linkBtn_)
+import AP.UI.Part.Form (inputText_)
 import AP.UI.Route as Routes
 import Data.Const (Const)
 import Data.Either (Either(..))
@@ -20,7 +21,6 @@ import Halogen as H
 import Halogen.HTML as HH
 import Halogen.HTML.Events as HE
 import Halogen.HTML.Properties as HP
-import AP.UI.Part.Form (inputText_)
 
 type Form :: (Type -> Type -> Type -> Type) -> Row Type
 type Form f =
@@ -143,5 +143,5 @@ homeComponent =
       <>
       ( ledgers <#> \ledger ->
         HH.li_
-          [ linkBtn_ ledger.name $ OpenLedger ledger.ledgerId ]
+          [ linkBtn_ ledger.result.name $ OpenLedger ledger.ledgerId ]
       )

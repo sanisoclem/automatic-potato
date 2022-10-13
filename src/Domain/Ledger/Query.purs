@@ -22,17 +22,18 @@ data LedgerQuery
   | GetBalancesV1
   | GetTransactionsV1 { from :: Maybe Instant, to :: Maybe Instant }
 
-data LedgerQueryResult
-  = GetLedgerResultV1
-    { name :: String
-    , accounts :: Array
-      { accountId :: AccountId
-      , name :: String
-      , accountType :: AccountType
-      , denomination :: Denomination
-      , closed :: Boolean
-      }
+type GetLedgerResultV1 =
+  { name :: String
+  , accounts :: Array
+    { accountId :: AccountId
+    , name :: String
+    , accountType :: AccountType
+    , denomination :: Denomination
+    , closed :: Boolean
     }
+  }
+data LedgerQueryResult
+  = GetLedgerResultV1 GetLedgerResultV1
   | GetBalancesResultV1
     { accountBalances :: Map AccountId { debits :: Money, credits :: Money }
     , floatingBalance :: { debits :: Money, credits :: Money }
