@@ -28,6 +28,7 @@ to generate this file without the comments in this block.
   , "datetime"
   , "debug"
   , "decimals"
+  , "dom-indexed"
   , "effect"
   , "either"
   , "exceptions"

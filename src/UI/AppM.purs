@@ -8,7 +8,7 @@ import AP.Data.Log as Log
 import AP.UI.Capability.Navigate (class MonadNavigate, class MonadNavigateAbs)
 import AP.UI.Route (Route)
 import AP.UI.Route as Route
-import AP.UI.Store (Action, EnvironmentType(..), Store)
+import AP.UI.Store (Action(..), EnvironmentType(..), Store)
 import AP.UI.Store as Store
 import Affjax.ResponseFormat as AXRF
 import Affjax.Web as AX
@@ -20,7 +20,7 @@ import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
 import Foreign (unsafeToForeign)
 import Halogen as H
-import Halogen.Store.Monad (class MonadStore, StoreT, getStore, runStoreT)
+import Halogen.Store.Monad (class MonadStore, StoreT, getStore, runStoreT, updateStore)
 import Routing.Duplex (print)
 import Safe.Coerce (coerce)
 import Web.HTML (window)
@@ -62,8 +62,7 @@ instance MonadApiClient AppM where
     pure  $ hush <<< decodeJson <<< _.body =<< hush response
   getLedgers = do
     liftAff <<< delay $ Milliseconds 1000.0
-    pure
-      [ { ledgerId: "emptyLedger", name: "Empty Ledger"}
-      , { ledgerId: "simpleLedger", name: "Simple Ledger"}
-      , { ledgerId: "complexLedger", name: "Complex Ledger"}
-      ]
+    { debug } <- getStore
+    pure debug
+  createLedger name = do
+    updateStore $ DebugCreateLedger { ledgerId: name, name }

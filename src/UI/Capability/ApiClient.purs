@@ -18,7 +18,9 @@ type Ledger =
 class Monad m <= MonadApiClient m where
   getSession :: m (Maybe Session)
   getLedgers :: m (Array Ledger)
+  createLedger :: String -> m Unit
 
 instance (MonadTrans t, MonadApiClient m, Monad (t m)) => MonadApiClient (t m) where
   getSession = lift getSession
   getLedgers = lift getLedgers
+  createLedger = lift <<< createLedger
