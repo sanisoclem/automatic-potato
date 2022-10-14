@@ -2,8 +2,8 @@ module AP.UI.AppM where
 
 import Prelude
 
-import AP.Capability.ApiClient (class MonadApiClient)
-import AP.Capability.Log (class MonadLog)
+import AP.Capability.ApiClient (class MonadApiClient, Ledger)
+import AP.Capability.Log (class MonadLog, logDebug)
 import AP.Data.Log as Log
 import AP.Data.Utility (convertJsonErrorToError)
 import AP.Domain.Ledger.Command (LedgerCommand(..))
@@ -22,7 +22,7 @@ import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
 import Data.Traversable (sequence)
-import Effect.Aff (Aff, Milliseconds(..), delay)
+import Effect.Aff (Aff)
 import Effect.Aff.Class (class MonadAff, liftAff)
 import Effect.Class (class MonadEffect, liftEffect)
 import Effect.Console as Console
@@ -68,21 +68,32 @@ instance MonadNavigateAbs AppM where
   navigateAbs href = liftEffect $ setHref href =<< location =<< window
 
 liftReq x = (liftEither <<< lmap (error <<< printError)) <=< liftAff $ x
+
+getLedger :: String -> AppM Ledger
 getLedger id = do
-    response <- liftReq $ AX.get AXRF.json ("/api/ledger/" <> id <> "/GetLedgerV1")
-    result <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
-    pure { ledgerId: id, result }
+  response <- liftReq $ AX.get AXRF.json ("/api/ledger/" <> id <> "/GetLedgerV1")
+  result <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
+  pure { ledgerId: id, result }
+
+getLedgers :: AppM (Array Ledger)
+getLedgers = do
+  response <- liftReq $ AX.get AXRF.json ("/api/ledger")
+  ids <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
+  sequence $ getLedger <$> ids
+
+refreshLedgerList :: AppM Unit
+refreshLedgerList = do
+  ledgers <- getLedgers
+  updateStore $ UpdateLedgers ledgers
+  logDebug "refreshed ledger list"
 
 instance MonadApiClient AppM where
   getSession = do
     response <- liftAff $ AX.get AXRF.json ("/api/session")
     pure $ hush <<< decodeJson <<< _.body =<< hush response
-  getLedger = getLedger
-  getLedgers = do
-    response <- liftReq $ AX.get AXRF.json ("/api/ledger")
-    ids <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
-    sequence $ getLedger <$> ids
+  refreshLedgerList = refreshLedgerList
   createLedger name = do
     response <- liftReq $ AX.post AXRF.json ("/api/ledger") Nothing
     id <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
     void <<< liftReq $ AX.put AXRF.json ("/api/ledger/" <> id) (Just <<< json <<< encodeJson <<< UpdateLedgerV1 $ { name })
+    refreshLedgerList

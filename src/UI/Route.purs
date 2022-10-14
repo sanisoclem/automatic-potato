@@ -17,7 +17,9 @@ derive instance Ord Route
 
 data LedgerRoute
   = LedgerDashboard
-  | AccountLedger String
+  | AccountNew
+  | AccountTransactions String
+  | AccountEdit String
 
 derive instance Generic LedgerRoute _
 derive instance Eq LedgerRoute
@@ -26,7 +28,9 @@ derive instance Ord LedgerRoute
 ledgerRouteCodec :: RouteDuplex' LedgerRoute
 ledgerRouteCodec = sum
   { "LedgerDashboard": noArgs
-  , "AccountLedger": "account" / string segment
+  , "AccountNew" : "new-acct" / noArgs
+  , "AccountTransactions": "acct" / string segment / "txn"
+  , "AccountEdit" : "acct" / string segment / "edit"
   }
 
 routeCodec :: RouteDuplex' Route

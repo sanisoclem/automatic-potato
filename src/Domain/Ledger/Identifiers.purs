@@ -14,6 +14,7 @@ data AccountType
   | Liability
   | Asset
 
+derive instance Eq AccountType
 derive instance genericAccountType :: Generic AccountType _
 instance decodeJsonAccountType :: DecodeJson AccountType where
   decodeJson = genericDecodeJson

@@ -32,12 +32,14 @@ type GetLedgerResultV1 =
     , closed :: Boolean
     }
   }
+type GetBalancesV1 =
+  { accountBalances :: Map AccountId { debits :: Money, credits :: Money }
+  , floatingBalance :: { debits :: Money, credits :: Money }
+  }
+
 data LedgerQueryResult
   = GetLedgerResultV1 GetLedgerResultV1
-  | GetBalancesResultV1
-    { accountBalances :: Map AccountId { debits :: Money, credits :: Money }
-    , floatingBalance :: { debits :: Money, credits :: Money }
-    }
+  | GetBalancesResultV1 GetBalancesV1
   | GetTransactionsResultV1
     ( Array
       { transactionId :: TransactionId

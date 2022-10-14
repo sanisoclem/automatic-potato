@@ -9,6 +9,8 @@ import AP.UI.Capability.Navigate (class MonadNavigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Home as Component
 import AP.UI.Component.Ledger.Router as Component.Ledger
+import AP.UI.Component.Utility (OpaqueSlot)
+import AP.UI.Part.Button (link_)
 import AP.UI.Route (toHref)
 import AP.UI.Route as Routes
 import AP.UI.Store (EnvironmentType)
@@ -32,8 +34,6 @@ data Query a = Navigate Routes.Route a
 data Test = Tes2t String String
 
 type Input = Unit
-
-type OpaqueSlot slot = forall query. H.Slot query Void slot
 
 type State =
   { route :: Maybe Routes.Route
@@ -76,10 +76,6 @@ component = connect selectAll $ H.mkComponent
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize -> do
-      -- don't think this needs to be done
-      -- { psi } <- H.get
-      -- initialRoute <- hush <<< RD.parse routeCodec <<< _.path <$> liftEffect psi.locationState
-      -- void <<< sequence $ navigate <$> initialRoute
       session <- getSession
       void <<< sequence $ lift <<< updateStore <<< Store.UseSession <$> session
       pure unit
@@ -96,31 +92,20 @@ component = connect selectAll $ H.mkComponent
       pure (Just a)
 
   render :: State -> H.ComponentHTML Action ChildSlots m
-  render { route, session } = case session of
-    Just _ ->
-      HH.div
-        [ css "bg-gray-800 text-white" ]
-        [ case route of
-          Just r -> case r of
-            Routes.Home ->
-              HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit
-            Routes.Ledger ledgerId l ->
-              HH.slot_ (Proxy :: _ "ledger") unit Component.Ledger.routerComponent { ledgerId, route: l }
-          Nothing ->
+  render { route, session } =
+    HH.div
+      [ css "bg-gray-800 text-white" ]
+      [ case { route, session } of
+          { route: Just (Routes.Home) } ->
+            HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit
+          { route: Just _r, session: Nothing } ->
+            HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit -- TODO: return url
+          { route: Just (Routes.Ledger ledgerId l), session: Just _ } ->
+            HH.slot_ (Proxy :: _ "ledger") unit Component.Ledger.routerComponent { ledgerId, route: l }
+          { route: Nothing } ->
             HH.div
               [ css "mx-auto max-w-md text-center p-20"]
               [ HH.h1_ [ HH.text "Not Found" ]
               , HH.a [ HP.href $ toHref Routes.Home ] [ HH.text "Home"]
               ]
-        ]
-
-    Nothing ->
-        HH.div
-          [ css "bg-gray-800 w-screen text-white" ]
-          [ HH.div
-            [ css "mx-auto p-4 min-h-screen gap-y-8 max-w-md flex flex-col justify-center items-center" ]
-            [ HH.a
-                [ HP.href "/api/auth/github" ]
-                [ HH.text "Login with Github" ]
-            ]
-          ]
+      ]

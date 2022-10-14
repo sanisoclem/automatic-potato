@@ -34,3 +34,16 @@ btnSubmit label additionalAttribs =
 
 btnSubmit_ :: String -> H.ComponentHTML _ _ _
 btnSubmit_ = btnSubmit <@> []
+
+link :: forall action. String -> String -> Array (HH.IProp I.HTMLa action) -> H.ComponentHTML action _ _
+link label href additionalAttribs =
+  HH.a
+    ( [ HP.href href
+      , css "inline-block tracking-wide px-4 py-2 hover:text-white rounded border-transparent border-solid border-2 active:text-white link:text-white hover:border-green-500w-full block tracking-wide px-4 py-2 hover:text-white rounded border-transparent border-solid border-2 active:text-white link:text-white hover:border-green-500"
+      ]
+      <> additionalAttribs
+    )
+    [ HH.text label ]
+
+link_ :: forall action. String -> String -> H.ComponentHTML action _ _
+link_ label href = link label href []

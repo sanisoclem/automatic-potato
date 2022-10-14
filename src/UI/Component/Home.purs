@@ -5,106 +5,88 @@ module AP.UI.Component.Home
 
 import Prelude
 
-import AP.Capability.ApiClient (class MonadApiClient, Ledger, createLedger, getLedgers)
+import AP.Capability.ApiClient (class MonadApiClient, Ledger, Session, createLedger, refreshLedgerList)
+import AP.Capability.Log (class MonadLog, logDebug)
+import AP.Capability.Now (class MonadNow)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
-import AP.UI.Form.Validation as V
-import AP.UI.Part.Button (btnSubmit_, linkBtn_)
-import AP.UI.Part.Form (inputText_)
+import AP.UI.Component.Ledger.CreateLedger as CreateLedger
+import AP.UI.Part.Button (linkBtn_, link_)
 import AP.UI.Route as Routes
+import AP.UI.Store as Store
 import Data.Const (Const)
-import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Effect.Aff.Class (class MonadAff)
-import Formless as F
 import Halogen as H
 import Halogen.HTML as HH
-import Halogen.HTML.Events as HE
-import Halogen.HTML.Properties as HP
-
-type Form :: (Type -> Type -> Type -> Type) -> Row Type
-type Form f =
-  ( name     :: f String V.FormError String
-  --              input  error  output
-  )
-
-type Input = Unit
-type Output = Unit
-type Query :: forall k. k -> Type
-type Query = Const Void
-
-type State =
-  { form:: FormContext
-  , ledgerList :: LedgerListState
-  }
-data LedgerListState
-  = Loading
-  | Loaded
-    { ledgers :: Array Ledger
-    , showNewLedger :: Boolean
-    }
+import Halogen.Store.Connect (Connected, connect)
+import Halogen.Store.Monad (class MonadStore)
+import Halogen.Store.Select (selectAll)
+import Type.Proxy (Proxy(..))
 
 data Action
   = Initialize
-  | Receive FormContext
-  | Eval FormlessAction
-  | OpenLedger String
+  | Receive (Connected Store.Store Unit)
   | StartNewLedger
-  | CancelNewLedger
+  | CreateNewLedgerResult CreateLedger.Output
+  | OpenLedger String
 
-type FormContext = F.FormContext (Form F.FieldState) (Form (F.FieldAction Action)) Input Action
-type FormlessAction = F.FormlessAction (Form F.FieldState)
+type State =
+  { session :: Maybe Session
+  , ledgers :: Maybe (Array Ledger)
+  , showNewLedger :: Boolean
+  }
+
+type ChildSlots =
+  ( createLedger :: H.Slot (Const Void) CreateLedger.Output Unit
+  )
 
 homeComponent
-  :: forall m
-   . MonadApiClient m
+  :: forall q o m
+   . MonadStore Store.Action Store.Store m
   => MonadAff m
   => MonadNavigate Routes.Route m
-  => H.Component Query Input Output m
-homeComponent =
-  F.formless { liftAction: Eval } mempty $ H.mkComponent
-    { initialState: \ctx -> { form: ctx, ledgerList: Loading }
+  => MonadApiClient m
+  => MonadLog m
+  => MonadNow m
+  => H.Component q Unit o m
+homeComponent = connect selectAll $ H.mkComponent
+    { initialState
     , render
     , eval: H.mkEval H.defaultEval
-        { initialize = Just Initialize
-        , receive = Just <<< Receive
-        , handleAction = handleAction
-        , handleQuery = handleQuery
-        }
+      { initialize = Just Initialize
+      , receive = Just <<< Receive
+      , handleAction = handleAction
+      }
     }
   where
-  handleAction :: Action -> H.HalogenM State Action () (F.FormOutput (Form F.FieldState) Output) m Unit
+  initialState :: Connected Store.Store Unit -> State
+  initialState { context: { session, ledgers } } = { session, ledgers, showNewLedger: false }
+  handleAction :: Action -> H.HalogenM State Action ChildSlots o m Unit
   handleAction = case _ of
     Initialize -> do
-      ledgers <- getLedgers
-      H.modify_ _ { ledgerList = Loaded { ledgers, showNewLedger: false } }
+      state <- H.get
+      case state of
+        { session: Just _, ledgers: Nothing } -> do
+          logDebug "refreshing ledger list"
+          refreshLedgerList
+        _ -> pure unit
+    Receive { context: { session, ledgers } } -> do
+      logDebug "receiving new stuff"
+      H.modify_ _ { session = session, ledgers = ledgers }
+      handleAction Initialize
     OpenLedger ledgerId -> do
       navigate $ Routes.Ledger ledgerId Routes.LedgerDashboard
-    StartNewLedger -> H.modify_ \s -> case s.ledgerList of
-      Loaded x -> s { ledgerList = Loaded x { showNewLedger = true } }
-      _ -> s
-    CancelNewLedger -> H.modify_ \s -> case s.ledgerList of
-      Loaded x -> s { ledgerList = Loaded x { showNewLedger = false } }
-      _ -> s
-    Receive ctx -> H.modify_ _ { form = ctx }
-    Eval action -> F.eval action
-  handleQuery :: forall a. F.FormQuery Query _ _ _ a -> H.HalogenM _ _ _ _ m (Maybe a)
-  handleQuery =
-    let
-      onSubmit x = do
-        f <- H.gets _.form
-        handleAction f.formActions.reset
-        createLedger x.name
-        H.modify_ _ { ledgerList = Loading }
-        ledgers <- getLedgers
-        H.modify_ _ { ledgerList = Loaded { ledgers, showNewLedger: false } }
-    in
-    F.handleSubmitValidate onSubmit F.validate
-      { name: V.required >=> V.minLength 3
-      }
-  render :: State -> H.ComponentHTML Action () m
-  render state =
-    HH.div
+    StartNewLedger -> H.modify_ _ { showNewLedger = true }
+    CreateNewLedgerResult (CreateLedger.LedgerCreationRequested name) -> do
+      createLedger name
+      H.modify_ _ { showNewLedger = false }
+    CreateNewLedgerResult (CreateLedger.LedgerCreationCancelled) -> do
+      H.modify_ _ { showNewLedger = false }
+
+  render :: State -> H.ComponentHTML Action ChildSlots m
+  render { session, ledgers, showNewLedger } =
+     HH.div
       [ css "text-center min-h-screen w-screen flex flex-col justify-center items-center" ]
       [ HH.div
         [ css "max-w-screen-lg p-4"]
@@ -113,35 +95,27 @@ homeComponent =
             [ HH.text "Empire Builder" ]
         , HH.h2
             [ css "mb-12 text-gray-400" ]
-            [ HH.text "Pick a Ledger" ]
-        , case state.ledgerList of
-          Loading -> renderLoading
-          Loaded x -> renderLoaded state x
+            [ HH.text "Blah blah blah blah." ]
+        , case session of
+          Just _ -> case ledgers of
+            Just ledgerList ->
+              HH.ul [ css "flex flex-col gap-2" ] $
+                [ HH.li_
+                  if showNewLedger
+                  then
+                    [ HH.slot (Proxy :: _ "createLedger") unit CreateLedger.createLedgerComponent unit CreateNewLedgerResult
+                    ]
+                  else
+                    [ linkBtn_ "New Ledger" StartNewLedger
+                    ]
+                ]
+                <>
+                ( ledgerList <#> \ledger ->
+                  HH.li_
+                    [ linkBtn_ ledger.result.name $ OpenLedger ledger.ledgerId ]
+                )
+            Nothing ->
+              HH.div_ [ HH.text "Loading..."]
+          Nothing -> link_ "Login with Github" "/api/auth/github"
         ]
       ]
-  renderLoading =
-    HH.div_ [ HH.text "Loading..."]
-  renderLoaded state { ledgers, showNewLedger } =
-    HH.ul [ css "flex flex-col gap-2" ] $
-      [ HH.li_
-        if showNewLedger
-        then
-          [ HH.form
-              [ HE.onSubmit state.form.formActions.handleSubmit ]
-              [ inputText_ state.form.fields.name.value state.form.actions.name "Name"
-              , case state.form.fields.name.result of
-                  Just (Left error) -> HH.text $ V.errorToString error
-                  _ -> HH.text ""
-              , btnSubmit_ "Create"
-              , linkBtn_ "Cancel" CancelNewLedger
-              ]
-          ]
-        else
-          [ linkBtn_ "New Ledger" StartNewLedger
-          ]
-      ]
-      <>
-      ( ledgers <#> \ledger ->
-        HH.li_
-          [ linkBtn_ ledger.result.name $ OpenLedger ledger.ledgerId ]
-      )

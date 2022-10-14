@@ -28,6 +28,7 @@ main = HA.runHalogenAff do
       { envType
       , psi
       , session: Nothing
+      , ledgers: Nothing
       }
 
   rootComponent <- runAppM initialStore Router.component
