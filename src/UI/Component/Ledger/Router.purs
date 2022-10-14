@@ -3,10 +3,11 @@ module AP.UI.Component.Ledger.Router where
 import Prelude
 
 import AP.Capability.ApiClient (class MonadApiClient, Balances, Ledger, refreshLedgerList)
-import AP.Domain.Ledger.Identifiers (AccountType(..), ledgerId)
+import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType(..), ledgerId)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Ledger.Dashboard (dashboardComponent) as Component.Ledger
+import AP.UI.Component.Ledger.EditAccount (editAccountComponent) as Component.Ledger
 import AP.UI.Component.Ledger.Transactions (transactionsComponent) as Component.Ledger
 import AP.UI.Component.Utility (OpaqueSlot)
 import AP.UI.Part.Button (linkBtn_)
@@ -37,13 +38,18 @@ type State =
 
 data Action
   = Initialize
-  | NavigateHome
   | Receive (Connected Store.Store Input)
+  | NavigateHome
+  | NavigateAccountNew
+  | NavigateAccountEdit AccountId
+  | NavigateAccountTransactions AccountId
+
+
 
 type ChildSlots =
   ( dashboard :: OpaqueSlot Unit
   , accountLedger :: OpaqueSlot Unit
-  , newAccount :: OpaqueSlot Unit
+  , editAccount :: OpaqueSlot Unit
   )
 
 routerComponent
@@ -98,11 +104,20 @@ routerComponent = connect selectAll $ H.mkComponent
         -- TODO: get ledger balances
     NavigateHome ->
       navigate $ Routes.Home
+    NavigateAccountNew -> do
+      ledgerId <- H.gets _.ledgerId
+      navigate $ Routes.Ledger ledgerId Routes.AccountNew
+    NavigateAccountEdit accountId -> do
+      ledgerId <- H.gets _.ledgerId
+      navigate $ Routes.Ledger ledgerId $ Routes.AccountEdit accountId
+    NavigateAccountTransactions accountId -> do
+      ledgerId <- H.gets _.ledgerId
+      navigate $ Routes.Ledger ledgerId $ Routes.AccountTransactions accountId
 
   render :: State -> H.ComponentHTML Action ChildSlots m
   render state = case state.ledger of
     Nothing ->  HH.div_ [ HH.text "Ledger not found" ]
-    Just { ledgerId, result: ledger } ->
+    Just { result: ledger } ->
       HH.div
         [ css "flex flex-row "]
         [ HH.div
@@ -123,12 +138,18 @@ routerComponent = connect selectAll $ H.mkComponent
             , HH.div_
                 [ HH.h3_ [ HH.text "Assets"]
                 , HH.ul_ $ filter (\a -> a.accountType == Asset) ledger.accounts <#> \a ->
-                    HH.li_ [HH.text a.name ]
+                    HH.li_ [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId ]
                 ]
             , HH.div_
                 [ HH.h3_ [ HH.text "Liabilities"]
                 , HH.ul_ $ filter (\a -> a.accountType == Liability) ledger.accounts <#> \a ->
-                    HH.li_ [HH.text a.name ]
+                    HH.li_ [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId ]
+                ]
+            , HH.div_
+                [ HH.h3_ [ HH.text "Actions"]
+                , HH.ul_
+                    [ HH.li_ [ linkBtn_ "New Account" NavigateAccountNew ]
+                    ]
                 ]
             ]
         , HH.div
@@ -139,9 +160,9 @@ routerComponent = connect selectAll $ H.mkComponent
               Routes.AccountTransactions accountId ->
                 HH.slot_ (Proxy :: _ "accountLedger") unit Component.Ledger.transactionsComponent unit
               Routes.AccountEdit accountId ->
-                HH.slot_ (Proxy :: _ "accountLedger") unit Component.Ledger.transactionsComponent unit
+                HH.slot_ (Proxy :: _ "editAccount") unit Component.Ledger.editAccountComponent $ Just accountId
               Routes.AccountNew ->
-                HH.slot_ (Proxy :: _ "accountLedger") unit Component.Ledger.transactionsComponent unit
+                HH.slot_ (Proxy :: _ "editAccount") unit Component.Ledger.editAccountComponent Nothing
             ]
         ]
 

@@ -2,7 +2,9 @@ module AP.UI.Route where
 
 import Prelude hiding ((/))
 
+import AP.Domain.Ledger.Identifiers (AccountId(..))
 import Data.Generic.Rep (class Generic)
+import Data.Lens.Iso.Newtype (_Newtype)
 import Routing.Duplex (RouteDuplex', print, root, segment, string)
 import Routing.Duplex.Generic (noArgs, sum)
 import Routing.Duplex.Generic.Syntax ((/))
@@ -18,19 +20,22 @@ derive instance Ord Route
 data LedgerRoute
   = LedgerDashboard
   | AccountNew
-  | AccountTransactions String
-  | AccountEdit String
+  | AccountTransactions AccountId
+  | AccountEdit AccountId
 
 derive instance Generic LedgerRoute _
 derive instance Eq LedgerRoute
 derive instance Ord LedgerRoute
 
+accountIdCodec :: RouteDuplex' AccountId
+accountIdCodec = _Newtype (string segment)
+
 ledgerRouteCodec :: RouteDuplex' LedgerRoute
 ledgerRouteCodec = sum
   { "LedgerDashboard": noArgs
   , "AccountNew" : "new-acct" / noArgs
-  , "AccountTransactions": "acct" / string segment / "txn"
-  , "AccountEdit" : "acct" / string segment / "edit"
+  , "AccountTransactions": "acct" / accountIdCodec / "txn"
+  , "AccountEdit" : "acct" / accountIdCodec / "edit"
   }
 
 routeCodec :: RouteDuplex' Route

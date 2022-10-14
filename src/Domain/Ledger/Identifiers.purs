@@ -6,6 +6,7 @@ import Data.Argonaut (class EncodeJson, class DecodeJson)
 import Data.Argonaut.Decode.Generic (genericDecodeJson)
 import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.Generic.Rep (class Generic)
+import Data.Newtype (class Newtype)
 import Safe.Coerce (coerce)
 
 data AccountType
@@ -37,6 +38,7 @@ unAccountId = coerce
 accountId :: String -> AccountId
 accountId = coerce
 
+derive instance Newtype AccountId _
 derive newtype instance DecodeJson AccountId
 derive newtype instance EncodeJson AccountId
 derive newtype instance Eq AccountId
