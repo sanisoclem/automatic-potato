@@ -29,9 +29,11 @@ class Monad m <= MonadApiClient m where
   refreshLedgerList :: m Unit
   createLedger :: String -> m Unit
   createAccount :: CreateLedger -> m Unit
+  getBalances :: String -> m Balances
 
 instance (MonadTrans t, MonadApiClient m, Monad (t m)) => MonadApiClient (t m) where
   getSession = lift getSession
   createLedger = lift <<< createLedger
   refreshLedgerList = lift refreshLedgerList
   createAccount = lift <<< createAccount
+  getBalances = lift <<< getBalances

@@ -51,7 +51,7 @@ handleCommand = case _ of
       queue AccountUpdated
     CloseAccountV1 accountId -> do
       account <- getAccount accountId
-      -- ensure "Account balance should be zero" $ account.balance == zeroMoney
+      -- ensure "Account balance should be zero" $ account.balance == zero
       putAccount account { closed = true }
       queue AccountClosed
     CreateTransactionV1 x -> do

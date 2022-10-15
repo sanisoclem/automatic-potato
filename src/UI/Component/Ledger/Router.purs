@@ -2,8 +2,9 @@ module AP.UI.Component.Ledger.Router where
 
 import Prelude
 
-import AP.UI.Capability.ApiClient (class MonadApiClient, Balances, Ledger, refreshLedgerList)
-import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType(..), ledgerId)
+import AP.Data.Money (Money(..), toString)
+import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType(..), accountId, ledgerId)
+import AP.UI.Capability.ApiClient (class MonadApiClient, Balances, Ledger, getBalances, refreshLedgerList)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Ledger.Dashboard (dashboardComponent) as Component.Ledger
@@ -15,7 +16,8 @@ import AP.UI.Route (LedgerRoute)
 import AP.UI.Route as Routes
 import AP.UI.Store as Store
 import Data.Array (filter, find)
-import Data.Maybe (Maybe(..), isJust, isNothing)
+import Data.Map (lookup)
+import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
@@ -79,10 +81,10 @@ routerComponent = connect selectAll $ H.mkComponent
   handleAction = case _ of
     Initialize -> do
       ledger <- H.gets _.ledger
-      when (isJust ledger) do
-        pure unit -- TODO: get ledger balances
       when (isNothing ledger) do
         refreshLedgerList
+      balances <- H.gets _.ledgerId >>= getBalances
+      H.modify_ _ { balances = Just balances }
     Receive { context, input: { ledgerId, route } } -> do
       oldRoute <- H.gets _.route
       oldLedgerId <- H.gets _.ledgerId
@@ -93,12 +95,18 @@ routerComponent = connect selectAll $ H.mkComponent
           { route = route
           , activeAccount = Nothing -- TODO: recalc active account
           }
+
       H.modify_ _
         { ledgerId = ledgerId
         , ledger = context.ledgers >>= find (\l -> l.ledgerId == ledgerId)
-        , balances = Nothing
         }
-        -- TODO: get ledger balances
+      when (oldLedgerId /= ledgerId) do
+        H.modify_ _
+          { balances = Nothing
+          }
+        balances <- getBalances ledgerId
+        H.modify_ _ { balances = Just balances }
+
     NavigateHome ->
       navigate $ Routes.Home
     NavigateAccountNew -> do
@@ -110,7 +118,14 @@ routerComponent = connect selectAll $ H.mkComponent
     NavigateAccountTransactions accountId -> do
       ledgerId <- H.gets _.ledgerId
       navigate $ Routes.Ledger ledgerId $ Routes.AccountTransactions accountId
-
+  getBalance :: State -> AccountId -> String
+  getBalance state accountId =
+    state.balances
+    <#> _.accountBalances
+    >>= lookup accountId
+    <#> (\{credits, debits} -> debits - credits )
+    # fromMaybe zero
+    # toString
   render :: State -> H.ComponentHTML Action ChildSlots m
   render state = case state.ledger of
     Nothing ->  HH.div_ [ HH.text "Ledger not found" ]
@@ -118,29 +133,38 @@ routerComponent = connect selectAll $ H.mkComponent
       HH.div
         [ css "flex flex-row "]
         [ HH.div
-            [ css "min-h-screen bg-gray-900 w-64 flex flex-col justify-center items-center gap-4"]
-            [ HH.h2_
+            [ css "min-h-screen bg-gray-900 w-64 flex flex-col justify-center items-center gap-4 text-center"]
+            [ HH.h2
+                [ css "text-xl"]
                 [ linkBtn_ ledger.result.name NavigateHome ]
-            , HH.div_
+            , HH.div
+                [ css "text-xs"]
                 [ HH.div_ [ HH.text "TODO Metrics" ]
-                , HH.div_ [ HH.text "Networth: $100,000 +0.8%" ] -- overall net position
-                , HH.div_ [ HH.text "Budgeted $ days: 100" ] -- number of dollar-days budgeted, measures predictiveness of budget
-                , HH.div_ [ HH.text "Debt ratio: 0.3" ] -- ratio of liabilities to assets, could add a breakdown to separate long term vs short term debt
-                , HH.div_ [ HH.text "Historical Volatility:  5%" ] -- how much networth moves
-                , HH.div_ [ HH.text "Cashflow: +$10,000" ] -- net cashflow
+                -- , HH.div_ [ HH.text "Networth: $100,000 +0.8%" ] -- overall net position
+                -- , HH.div_ [ HH.text "Budgeted $ days: 100" ] -- number of dollar-days budgeted, measures predictiveness of budget
+                -- , HH.div_ [ HH.text "Debt ratio: 0.3" ] -- ratio of liabilities to assets, could add a breakdown to separate long term vs short term debt
+                -- , HH.div_ [ HH.text "Historical Volatility:  5%" ] -- how much networth moves
+                -- , HH.div_ [ HH.text "Cashflow: +$10,000" ] -- net cashflow
                 ]
-             , HH.div_
+             , HH.div
+                [ css "text-xs"]
                 [ HH.div_ [ HH.text "TODO: Floating Balance" ]
                 ]
             , HH.div_
                 [ HH.h3_ [ HH.text "Assets"]
                 , HH.ul_ $ filter (\a -> a.accountType == Asset) ledger.result.accounts <#> \a ->
-                    HH.li_ [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId ]
+                    HH.li_
+                      [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId
+                      , HH.span_ [ HH.text $ getBalance state a.accountId ]
+                      ]
                 ]
             , HH.div_
                 [ HH.h3_ [ HH.text "Liabilities"]
                 , HH.ul_ $ filter (\a -> a.accountType == Liability) ledger.result.accounts <#> \a ->
-                    HH.li_ [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId ]
+                    HH.li_
+                      [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId
+                      , HH.span_ [ HH.text $ getBalance state a.accountId ]
+                      ]
                 ]
             , HH.div_
                 [ HH.h3_ [ HH.text "Actions"]

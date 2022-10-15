@@ -21,9 +21,6 @@ fromString = map Money <<< D.fromString
 toString ∷ Money -> String
 toString = D.toString <<< coerce
 
-zeroMoney :: Money
-zeroMoney = Money $ D.fromInt 0
-
 instance EncodeJson Money where
   encodeJson = encodeJson <<< toString
 

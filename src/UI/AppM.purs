@@ -2,11 +2,11 @@ module AP.UI.AppM where
 
 import Prelude
 
-import AP.UI.Capability.ApiClient (class MonadApiClient, Ledger)
 import AP.Capability.Log (class MonadLog, logDebug)
 import AP.Data.Log as Log
 import AP.Data.Utility (convertJsonErrorToError)
 import AP.Domain.Ledger.Command (LedgerCommand(..))
+import AP.UI.Capability.ApiClient (class MonadApiClient, Ledger)
 import AP.UI.Capability.Navigate (class MonadNavigate, class MonadNavigateAbs)
 import AP.UI.Route (Route)
 import AP.UI.Route as Route
@@ -17,7 +17,7 @@ import Affjax.ResponseFormat as AXRF
 import Affjax.Web (printError)
 import Affjax.Web as AX
 import Control.Monad.Error.Class (class MonadError, class MonadThrow, liftEither)
-import Data.Argonaut (decodeJson, encodeJson)
+import Data.Argonaut (class DecodeJson, decodeJson, encodeJson)
 import Data.Bifunctor (lmap)
 import Data.Either (hush)
 import Data.Maybe (Maybe(..))
@@ -69,10 +69,18 @@ instance MonadNavigateAbs AppM where
 
 liftReq x = (liftEither <<< lmap (error <<< printError)) <=< liftAff $ x
 
+postCommand :: String -> LedgerCommand -> AppM Unit
+postCommand ledgerId cmd =
+  void <<< liftReq $ AX.put AXRF.json ("/api/ledger/" <> ledgerId) (Just <<< json <<< encodeJson $ cmd)
+
+postQuery :: forall a. DecodeJson a => String -> String -> AppM a
+postQuery ledgerId qry = do
+  response <- liftReq $ AX.get AXRF.json ("/api/ledger/" <> ledgerId <> "/" <> qry)
+  liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
+
 getLedger :: String -> AppM Ledger
 getLedger id = do
-  response <- liftReq $ AX.get AXRF.json ("/api/ledger/" <> id <> "/GetLedgerV1")
-  result <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
+  result <- postQuery id "GetLedgerV1"
   pure { ledgerId: id, result }
 
 getLedgers :: AppM (Array Ledger)
@@ -86,10 +94,6 @@ refreshLedgerList = do
   ledgers <- getLedgers
   updateStore $ UpdateLedgers ledgers
   logDebug "refreshed ledger list"
-
-postCommand :: String -> LedgerCommand -> AppM Unit
-postCommand ledgerId cmd =
-  void <<< liftReq $ AX.put AXRF.json ("/api/ledger/" <> ledgerId) (Just <<< json <<< encodeJson $ cmd)
 
 instance MonadApiClient AppM where
   getSession = do
@@ -108,3 +112,5 @@ instance MonadApiClient AppM where
       , accountType: newLedger.accountType
       }
     refreshLedgerList
+  getBalances ledgerId = do
+    postQuery ledgerId "GetBalancesV1"

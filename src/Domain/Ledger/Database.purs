@@ -4,7 +4,7 @@ import Prelude
 
 import AP.Capability.Storage.Database (class DatabaseDocument, class DatabaseDocumentId, class DatabaseId, class DatabaseIndex, class DocumentCollection, class DocumentId, class IndexedDocument, getIdPrefix)
 import AP.Data.Instant (Instant, unInstant)
-import AP.Data.Money (Money, zeroMoney)
+import AP.Data.Money (Money)
 import AP.Data.Utility (convertJsonErrorToError)
 import AP.Domain.Ledger.Identifiers (AccountId, AccountType, BalanceId, LedgerId, TransactionId, accountId, balanceId, ledgerId, transactionId, unAccountId, unTransactionId)
 import Control.Alternative ((<|>))
@@ -84,7 +84,7 @@ type LedgerBalanceDocumentRecord =
   }
 newtype LedgerBalanceDocument = LedgerBalanceDocument LedgerBalanceDocumentRecord
 emptyBalance :: LedgerBalanceDocumentRecord
-emptyBalance = { accountBalances: empty, floatingBalance: { debits: zeroMoney, credits: zeroMoney }}
+emptyBalance = { accountBalances: empty, floatingBalance: { debits: zero, credits: zero }}
 unLedgerBalanceDocument :: LedgerBalanceDocument -> LedgerBalanceDocumentRecord
 unLedgerBalanceDocument = coerce
 ledgerBalanceDocument :: LedgerBalanceDocumentRecord -> LedgerBalanceDocument

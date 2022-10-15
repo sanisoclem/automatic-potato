@@ -6,7 +6,7 @@ import AP.Capability.Storage.Cf (class MonadCfStorage)
 import AP.Capability.Storage.Database (class MonadDatabase, class MonadIndexedDatabase, class MonadReadonlyDatabase, class MonadReadonlyIndexedDatabase, deleteIndexedDocument, getCollection, getDocument, getDocumentReadonly, getFromRangeIndexReadonly, putDocument, putIndexedDocument, tryGetDocument, tryGetDocumentReadonly)
 import AP.Capability.Storage.Transactional (class MonadTransactionalStorage)
 import AP.Data.Instant (Instant, unInstant)
-import AP.Data.Money (Money, zeroMoney)
+import AP.Data.Money (Money)
 import AP.Data.Utility (ensure)
 import AP.Domain.Ledger.Database (AccountDocument, AccountDocumentRecord, LedgerBalanceDocumentRecord, LedgerDatabaseId, LedgerDocumentRecord, LedgerIndexes(..), TransactionDocument, TransactionDocumentRecord, accountDocument, emptyBalance, ledgerBalanceDocument, ledgerDocument, transactionDocument, unAccountDocument, unLedgerBalanceDocument, unLedgerDocument, unTransactionDocument)
 import AP.Domain.Ledger.Identifiers (AccountId, TransactionId, balanceId, ledgerId, unAccountId)
@@ -49,10 +49,10 @@ updateBalances amount creditAct debitAct = do
   putBalances updatedBalance
   where
     credit amt ca bal = case ca of
-      Just act -> bal { accountBalances = alter (Just <<< fromMaybe { debits: zeroMoney, credits: amt } <<< map (\b -> b { credits = b.credits + amt })) act bal.accountBalances }
+      Just act -> bal { accountBalances = alter (Just <<< fromMaybe { debits: zero, credits: amt } <<< map (\b -> b { credits = b.credits + amt })) act bal.accountBalances }
       Nothing -> bal { floatingBalance = bal.floatingBalance { credits = bal.floatingBalance.credits + amt } }
     debit amt da bal = case da of
-      Just act -> bal { accountBalances = alter (Just <<< fromMaybe { credits: zeroMoney, debits: amt } <<< map (\b -> b { debits = b.debits + amt })) act bal.accountBalances }
+      Just act -> bal { accountBalances = alter (Just <<< fromMaybe { credits: zero, debits: amt } <<< map (\b -> b { debits = b.debits + amt })) act bal.accountBalances }
       Nothing -> bal { floatingBalance = bal.floatingBalance { debits = bal.floatingBalance.debits + amt } }
 
 
