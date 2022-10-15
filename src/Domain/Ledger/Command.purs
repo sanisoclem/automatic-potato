@@ -7,7 +7,7 @@ import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe)
 import AP.Capability.Fetch (class MonadFetchRequest, class MonadFromRequest, getBodyJson)
-import AP.Domain.Ledger.Identifiers (AccountId, AccountType, Denomination, TransactionId)
+import AP.Domain.Ledger.Identifiers (AccountId, AccountType, TransactionId)
 import AP.Data.Instant (Instant)
 import AP.Data.Money (Money)
 import Effect.Exception (Error)
@@ -19,7 +19,7 @@ data LedgerCommand
   | CreateAccountV1
       { name :: String
       , accountType :: AccountType
-      , denomination :: Denomination
+      , denomination :: String
       }
   | UpdateAccountV1
       { accountId :: AccountId

@@ -5,7 +5,7 @@ module AP.UI.Component.Home
 
 import Prelude
 
-import AP.Capability.ApiClient (class MonadApiClient, Ledger, Session, createLedger, refreshLedgerList)
+import AP.UI.Capability.ApiClient (class MonadApiClient, Ledger, Session, createLedger, refreshLedgerList)
 import AP.Capability.Log (class MonadLog, logDebug)
 import AP.Capability.Now (class MonadNow)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
@@ -89,7 +89,7 @@ homeComponent = connect selectAll $ H.mkComponent
      HH.div
       [ css "text-center min-h-screen w-screen flex flex-col justify-center items-center" ]
       [ HH.div
-        [ css "max-w-screen-lg p-4"]
+        [ css "max-w-lg p-4"]
         [ HH.h1
             [ css "text-4xl text-center w-full" ]
             [ HH.text "Empire Builder" ]

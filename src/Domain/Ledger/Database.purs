@@ -6,7 +6,7 @@ import AP.Capability.Storage.Database (class DatabaseDocument, class DatabaseDoc
 import AP.Data.Instant (Instant, unInstant)
 import AP.Data.Money (Money, zeroMoney)
 import AP.Data.Utility (convertJsonErrorToError)
-import AP.Domain.Ledger.Identifiers (AccountId, AccountType, BalanceId, Denomination, LedgerId, TransactionId, accountId, balanceId, ledgerId, transactionId, unAccountId, unTransactionId)
+import AP.Domain.Ledger.Identifiers (AccountId, AccountType, BalanceId, LedgerId, TransactionId, accountId, balanceId, ledgerId, transactionId, unAccountId, unTransactionId)
 import Control.Alternative ((<|>))
 import Data.Argonaut (decodeJson, encodeJson)
 import Data.Map (Map, empty, singleton)
@@ -98,7 +98,7 @@ type AccountDocumentRecord =
   { accountId :: AccountId
   , name :: String
   , accountType :: AccountType
-  , denomination :: Denomination
+  , denomination :: String
   , closed :: Boolean
   }
 newtype AccountDocument = AccountDocument AccountDocumentRecord

@@ -2,7 +2,7 @@ module AP.UI.Component.Router where
 
 import Prelude
 
-import AP.Capability.ApiClient (class MonadApiClient, Session, getSession)
+import AP.UI.Capability.ApiClient (class MonadApiClient, Session, getSession)
 import AP.Capability.Log (class MonadLog)
 import AP.Capability.Now (class MonadNow)
 import AP.UI.Capability.Navigate (class MonadNavigate)

@@ -22,15 +22,15 @@ instance decodeJsonAccountType :: DecodeJson AccountType where
 instance encodeJsonAccountType :: EncodeJson AccountType where
   encodeJson = genericEncodeJson
 
-data Denomination
-  = Currency String
-  | Equity String
+-- data Denomination
+--   = Currency String
+--   | Security String
 
-derive instance genericDenomination :: Generic Denomination _
-instance decodeJsonDenomination :: DecodeJson Denomination where
-  decodeJson = genericDecodeJson
-instance encodeJsonDenomination :: EncodeJson Denomination where
-  encodeJson = genericEncodeJson
+-- derive instance genericDenomination :: Generic Denomination _
+-- instance decodeJsonDenomination :: DecodeJson Denomination where
+--   decodeJson = genericDecodeJson
+-- instance encodeJsonDenomination :: EncodeJson Denomination where
+--   encodeJson = genericEncodeJson
 
 newtype AccountId = AccountId String
 unAccountId ∷ AccountId → String

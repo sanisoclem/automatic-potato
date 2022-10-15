@@ -24,3 +24,37 @@ inputText value fieldActions placeholder additionalProps =
     <> additionalProps
 
 inputText_ v a p = inputText v a p []
+
+
+type RadioGroup action input output =
+  { label :: String
+  , state :: F.FieldState input Void output
+  , action :: F.FieldAction action input Void output
+  , options ::
+      Array
+        { option :: input
+        , render :: String
+        , props :: Array (HP.IProp I.HTMLinput action)
+        }
+  }
+
+radioGroup
+  :: forall input output action slots m
+   . Eq input
+  => RadioGroup action input output
+  -> H.ComponentHTML action slots m
+radioGroup { label, state, action, options } =
+  HH.div_
+    [ HH.label_ [ HH.text label ]
+    , HH.fieldset_ $ options <#> \{ option, render, props } ->
+        HH.label_
+          [ HH.input $ flip append props
+              [ HP.type_ HP.InputRadio
+              , HP.name action.key
+              , HP.checked (state.value == option)
+              , HE.onChange (\_ -> action.handleChange option)
+              , HE.onBlur action.handleBlur
+              ]
+          , HH.text render
+          ]
+    ]

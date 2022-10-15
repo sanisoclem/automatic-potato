@@ -2,7 +2,7 @@ module AP.UI.AppM where
 
 import Prelude
 
-import AP.Capability.ApiClient (class MonadApiClient, Ledger)
+import AP.UI.Capability.ApiClient (class MonadApiClient, Ledger)
 import AP.Capability.Log (class MonadLog, logDebug)
 import AP.Data.Log as Log
 import AP.Data.Utility (convertJsonErrorToError)
@@ -87,6 +87,10 @@ refreshLedgerList = do
   updateStore $ UpdateLedgers ledgers
   logDebug "refreshed ledger list"
 
+postCommand :: String -> LedgerCommand -> AppM Unit
+postCommand ledgerId cmd =
+  void <<< liftReq $ AX.put AXRF.json ("/api/ledger/" <> ledgerId) (Just <<< json <<< encodeJson $ cmd)
+
 instance MonadApiClient AppM where
   getSession = do
     response <- liftAff $ AX.get AXRF.json ("/api/session")
@@ -95,5 +99,12 @@ instance MonadApiClient AppM where
   createLedger name = do
     response <- liftReq $ AX.post AXRF.json ("/api/ledger") Nothing
     id <- liftEither <<< convertJsonErrorToError <<< decodeJson $ response.body
-    void <<< liftReq $ AX.put AXRF.json ("/api/ledger/" <> id) (Just <<< json <<< encodeJson <<< UpdateLedgerV1 $ { name })
+    postCommand id $ UpdateLedgerV1 { name }
+    refreshLedgerList
+  createAccount newLedger = do
+    postCommand newLedger.ledgerId $ CreateAccountV1
+      { name: newLedger.name
+      , denomination: newLedger.denomination
+      , accountType: newLedger.accountType
+      }
     refreshLedgerList

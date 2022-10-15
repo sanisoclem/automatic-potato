@@ -2,7 +2,11 @@ module AP.UI.Form.Validation where
 
 import Prelude
 
+import Data.Argonaut (class DecodeJson, class EncodeJson)
+import Data.Argonaut.Decode.Generic (genericDecodeJson)
+import Data.Argonaut.Encode.Generic (genericEncodeJson)
 import Data.Either (Either(..), note)
+import Data.Generic.Rep (class Generic)
 import Data.Maybe (Maybe(..))
 import Data.String as String
 
@@ -10,6 +14,13 @@ data FormError
   = Required
   | TooShort
   | TooLong
+
+
+derive instance Generic FormError _
+instance EncodeJson FormError where
+  encodeJson = genericEncodeJson
+instance DecodeJson FormError where
+  decodeJson = genericDecodeJson
 
 errorToString :: FormError -> String
 errorToString = case _ of
@@ -22,7 +33,7 @@ required = check (_ /= mempty) Required
 
 -- | Ensure that an input string is longer than the provided lower limit.
 minLength :: Int -> String -> Either FormError String
-minLength n = check (\str -> String.length str > n) TooShort
+minLength n = check (\str -> String.length str >= n) TooShort
 
 -- | Ensure that an input string is shorter than the provided upper limit.
 maxLength :: Int -> String -> Either FormError String

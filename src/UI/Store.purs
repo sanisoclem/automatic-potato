@@ -2,7 +2,7 @@ module AP.UI.Store where
 
 import Prelude
 
-import AP.Capability.ApiClient (Session, Ledger)
+import AP.UI.Capability.ApiClient (Session, Ledger)
 import Data.Maybe (Maybe(..))
 import Routing.PushState (PushStateInterface)
 

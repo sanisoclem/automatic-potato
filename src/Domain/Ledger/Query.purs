@@ -11,7 +11,7 @@ import Data.Generic.Rep (class Generic)
 import Data.Map (Map)
 import Data.Maybe (Maybe)
 import AP.Capability.Fetch (class MonadFetchRequest, class MonadFromRequest, getPath, tryGetParamNumber)
-import AP.Domain.Ledger.Identifiers (AccountId, AccountType, Denomination, TransactionId)
+import AP.Domain.Ledger.Identifiers (AccountId, AccountType, TransactionId)
 import AP.Data.Instant (Instant, mkInstant)
 import AP.Data.Money (Money)
 import Effect.Exception (Error, error)
@@ -28,7 +28,7 @@ type GetLedgerResultV1 =
     { accountId :: AccountId
     , name :: String
     , accountType :: AccountType
-    , denomination :: Denomination
+    , denomination :: String
     , closed :: Boolean
     }
   }
