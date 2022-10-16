@@ -69,5 +69,5 @@ instance monadTransactionalStorageTransactionalStorageT :: (Monad m, MonadCfStor
   batchputDurableState = batchputDurableState'
   batchdeleteDurableState = batchdeleteDurableState'
 
-batchgetDurableState :: ∀ m. (MonadThrow Error m) => (MonadTransactionalStorage m) => String -> m Json
-batchgetDurableState key = batchtryGetDurableState key >>= note (error $ "state not found: " <> key) >>> liftEither
+batchGetDurableState :: ∀ m. (MonadThrow Error m) => (MonadTransactionalStorage m) => String -> m Json
+batchGetDurableState key = batchtryGetDurableState key >>= note (error $ "state not found: " <> key) >>> liftEither
