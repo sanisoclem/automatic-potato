@@ -6,8 +6,9 @@ module AP.UI.Component.Ledger.CreateLedger
 
 import Prelude
 
+import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Form.Validation as V
-import AP.UI.Part.Button (btnSubmit_, linkBtn_)
+import AP.UI.Part.Button (btnSubmit_, btn_)
 import AP.UI.Part.Form (inputText_)
 import Data.Const (Const)
 import Data.Either (Either(..))
@@ -75,11 +76,13 @@ createLedgerComponent =
   render :: State -> H.ComponentHTML Action () m
   render form =
    HH.form
-      [ HE.onSubmit form.formActions.handleSubmit ]
+      [ HE.onSubmit form.formActions.handleSubmit
+      , css "flex gap-2 flex-col"
+      ]
       [ inputText_ form.fields.name.value form.actions.name "Name"
       , case form.fields.name.result of
           Just (Left error) -> HH.text $ V.errorToString error
           _ -> HH.text ""
       , btnSubmit_ "Create"
-      , linkBtn_ "Cancel" CancelNewLedger
+      , btn_ "Cancel" CancelNewLedger
       ]

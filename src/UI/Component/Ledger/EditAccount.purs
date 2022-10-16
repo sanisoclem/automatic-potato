@@ -95,7 +95,7 @@ editAccountComponent =
   render { formActions, fields, actions, input } =
     HH.div_
       [ HH.div
-        [ css "mx-auto p-4 gap-y-8 max-w-md flex flex-col justify-center items-center" ]
+        [ css "" ]
         [ HH.h2_
             [ HH.text <<< fromMaybe "New Account" $ const "Edit Account" <$> input.accountId ]
         ]

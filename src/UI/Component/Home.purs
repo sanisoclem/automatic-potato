@@ -11,7 +11,7 @@ import AP.Capability.Now (class MonadNow)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Ledger.CreateLedger as CreateLedger
-import AP.UI.Part.Button (linkBtn_, link_)
+import AP.UI.Part.Button (btn_, link_)
 import AP.UI.Route as Routes
 import AP.UI.Store as Store
 import Data.Const (Const)
@@ -100,20 +100,18 @@ homeComponent = connect selectAll $ H.mkComponent
           Just _ -> case ledgers of
             Just ledgerList ->
               HH.ul [ css "flex flex-col gap-2" ] $
-                [ HH.li_
-                  if showNewLedger
-                  then
-                    [ HH.slot (Proxy :: _ "createLedger") unit CreateLedger.createLedgerComponent unit CreateNewLedgerResult
-                    ]
-                  else
-                    [ linkBtn_ "New Ledger" StartNewLedger
-                    ]
-                ]
-                <>
-                ( ledgerList <#> \ledger ->
-                  HH.li_
-                    [ linkBtn_ ledger.result.name $ OpenLedger ledger.ledgerId ]
-                )
+                if showNewLedger
+                then
+                  [ HH.li_ [ HH.slot (Proxy :: _ "createLedger") unit CreateLedger.createLedgerComponent unit CreateNewLedgerResult ]
+                  ]
+                else
+                  [ btn_ "New Ledger" StartNewLedger
+                  ]
+                  <>
+                  ( ledgerList <#> \ledger ->
+                    HH.li_
+                      [ btn_ ledger.result.name $ OpenLedger ledger.ledgerId ]
+                  )
             Nothing ->
               HH.div_ [ HH.text "Loading..."]
           Nothing -> link_ "Login with Github" "/api/auth/github"

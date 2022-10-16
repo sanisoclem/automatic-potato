@@ -14,7 +14,7 @@ import Halogen.HTML.Properties as HP
 inputText :: forall action. String -> F.FieldAction action _ _ _  -> String -> Array (HH.IProp I.HTMLinput action) -> H.ComponentHTML action _ _
 inputText value fieldActions placeholder additionalProps =
   HH.input $
-    [ css "text-gray-800 p-2 mx-2"
+    [ css "text-gray-800 p-2 my-2"
     , HP.type_ HP.InputText
     , HP.placeholder placeholder
     , HP.value value

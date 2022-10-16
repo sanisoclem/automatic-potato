@@ -11,16 +11,17 @@ import AP.UI.Component.Ledger.Dashboard (dashboardComponent) as Component.Ledger
 import AP.UI.Component.Ledger.EditAccount (editAccountComponent) as Component.Ledger
 import AP.UI.Component.Ledger.Transactions (transactionsComponent) as Component.Ledger
 import AP.UI.Component.Utility (OpaqueSlot)
-import AP.UI.Part.Button (linkBtn_)
+import AP.UI.Part.Button (btn_, linkAction, linkAction_)
 import AP.UI.Route (LedgerRoute)
 import AP.UI.Route as Routes
 import AP.UI.Store as Store
-import Data.Array (filter, find)
+import Data.Array (filter, find, singleton)
 import Data.Map (lookup)
 import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
+import Halogen.HTML.Events as HE
 import Halogen.Store.Connect (Connected, connect)
 import Halogen.Store.Monad (class MonadStore)
 import Halogen.Store.Select (selectAll)
@@ -133,48 +134,52 @@ routerComponent = connect selectAll $ H.mkComponent
       HH.div
         [ css "flex flex-row "]
         [ HH.div
-            [ css "min-h-screen bg-gray-900 w-64 flex flex-col justify-center items-center gap-4 text-center"]
-            [ HH.h2
-                [ css "text-xl"]
-                [ linkBtn_ ledger.result.name NavigateHome ]
-            , HH.div
-                [ css "text-xs"]
-                [ HH.div_ [ HH.text "TODO Metrics" ]
+            [ css "min-h-screen bg-gray-800 flex-grow-0 flex-shrink-0 p-4 w-3/12 flex flex-col gap-4"]
+            [ HH.div_
+                [ HH.h2
+                    [ css "text-xl"]
+                    [ HH.text ledger.result.name ]
+                , HH.div_ <<< singleton $ linkAction mempty [ HE.onClick \_ -> NavigateHome ] [ HH.sub_ [ HH.text "Open Budget" ] ]
+                , HH.div_ <<< singleton $ linkAction mempty [ HE.onClick \_ -> NavigateAccountNew ] [ HH.sub_ [ HH.text "New Account" ] ]
+                ]
+            -- , HH.div
+            --     [ css "text-xs"]
+            --     [ HH.div_ [ HH.text "TODO Metrics" ]
                 -- , HH.div_ [ HH.text "Networth: $100,000 +0.8%" ] -- overall net position
                 -- , HH.div_ [ HH.text "Budgeted $ days: 100" ] -- number of dollar-days budgeted, measures predictiveness of budget
                 -- , HH.div_ [ HH.text "Debt ratio: 0.3" ] -- ratio of liabilities to assets, could add a breakdown to separate long term vs short term debt
                 -- , HH.div_ [ HH.text "Historical Volatility:  5%" ] -- how much networth moves
                 -- , HH.div_ [ HH.text "Cashflow: +$10,000" ] -- net cashflow
-                ]
-             , HH.div
-                [ css "text-xs"]
-                [ HH.div_ [ HH.text "TODO: Floating Balance" ]
-                ]
+            --     ]
+            --  , HH.div
+            --     [ css "text-xs"]
+            --     [ HH.div_ [ HH.text "TODO: Floating Balance" ]
+            --     ]
             , HH.div_
                 [ HH.h3_ [ HH.text "Assets"]
-                , HH.ul_ $ filter (\a -> a.accountType == Asset) ledger.result.accounts <#> \a ->
+                , HH.ul [ css "pl-4" ] $ filter (\a -> a.accountType == Asset) ledger.result.accounts <#> \a ->
                     HH.li_
-                      [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId
-                      , HH.span_ [ HH.text $ getBalance state a.accountId ]
+                      [ linkAction " flex flex-row justify-between"
+                          [ HE.onClick \_ -> NavigateAccountTransactions a.accountId ]
+                          [ HH.text a.name
+                          , HH.span_ [ HH.text $ (getBalance state a.accountId) <> " " <> a.denomination ]
+                          ]
                       ]
                 ]
             , HH.div_
                 [ HH.h3_ [ HH.text "Liabilities"]
-                , HH.ul_ $ filter (\a -> a.accountType == Liability) ledger.result.accounts <#> \a ->
+                , HH.ul [ css "pl-4" ] $ filter (\a -> a.accountType == Liability) ledger.result.accounts <#> \a ->
                     HH.li_
-                      [ linkBtn_ a.name $ NavigateAccountTransactions a.accountId
-                      , HH.span_ [ HH.text $ getBalance state a.accountId ]
+                      [ linkAction " flex flex-row justify-between"
+                          [ HE.onClick \_ -> NavigateAccountTransactions a.accountId ]
+                          [ HH.text a.name
+                          , HH.span_ [ HH.text $ (getBalance state a.accountId) <> " " <> a.denomination ]
+                          ]
                       ]
-                ]
-            , HH.div_
-                [ HH.h3_ [ HH.text "Actions"]
-                , HH.ul_
-                    [ HH.li_ [ linkBtn_ "New Account" NavigateAccountNew ]
-                    ]
                 ]
             ]
         , HH.div
-            []
+            [ css "flex-grow justify-self-stretch relative p-4" ]
             [ case state.route of
               Routes.LedgerDashboard ->
                 HH.slot_ (Proxy :: _ "dashboard") unit Component.Ledger.dashboardComponent unit

@@ -94,7 +94,7 @@ component = connect selectAll $ H.mkComponent
   render :: State -> H.ComponentHTML Action ChildSlots m
   render { route, session } =
     HH.div
-      [ css "bg-gray-800 text-white" ]
+      [ css "bg-gray-900 text-white" ]
       [ case { route, session } of
           { route: Just (Routes.Home) } ->
             HH.slot_ (Proxy :: _ "home") unit Component.homeComponent unit
