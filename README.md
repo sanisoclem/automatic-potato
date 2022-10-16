@@ -1,6 +1,8 @@
 # TBD
 
-Example fullstack purescript app using: purescript + halogen + cloudflare + tailwind + vite
+An experiment to create a fullstack purescript app using: purescript + halogen + cloudflare + tailwind + vite
+
+putting this on hold for now, I find it hard to be productive writing UI in halogen
 
 
 ```bash

@@ -2,7 +2,9 @@ module AP.UI.Capability.ApiClient where
 
 import Prelude
 
-import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType)
+import AP.Data.Instant (Instant(..))
+import AP.Data.Money (Money(..))
+import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType, TransactionId(..))
 import AP.Domain.Ledger.Query (GetLedgerResultV1, GetBalancesV1)
 import Control.Monad.Trans.Class (class MonadTrans, lift)
 import Data.Maybe (Maybe)
@@ -23,6 +25,22 @@ type CreateLedger =
   , name :: String
   , accountType:: AccountType
   , denomination :: String }
+type TxnFields =
+  ( date :: Instant
+  , credit :: Maybe AccountId
+  , debit :: Maybe AccountId
+  , amount :: Money
+  , notes :: String
+  )
+type Account =
+  { accountId :: AccountId
+  , name :: String
+  , accountType :: AccountType
+  , denomination :: String
+  , closed :: Boolean
+  }
+type NewTransaction = { | TxnFields }
+type Transaction = { transactionId :: TransactionId | TxnFields }
 
 class Monad m <= MonadApiClient m where
   getSession :: m (Maybe Session)

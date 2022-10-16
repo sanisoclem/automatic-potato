@@ -4,7 +4,7 @@ import Prelude
 
 import AP.Data.Money (toString)
 import AP.Domain.Ledger.Identifiers (AccountId, AccountType(..))
-import AP.UI.Capability.ApiClient (class MonadApiClient, Balances, Ledger, refreshLedgerList, updateBalances)
+import AP.UI.Capability.ApiClient (class MonadApiClient, Balances, Ledger, Account, refreshLedgerList, updateBalances)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Ledger.Dashboard (dashboardComponent) as Component.Ledger
@@ -36,7 +36,7 @@ type State =
   { ledgerId :: String
   , ledger:: Maybe Ledger
   , balances :: Maybe Balances
-  , activeAccount:: Maybe String
+  , activeAccount:: Maybe Account
   , route :: LedgerRoute }
 
 data Action
@@ -74,10 +74,15 @@ routerComponent = connect selectAll $ H.mkComponent
   initialState { context, input: { ledgerId, route } } =
     { ledgerId
     , route
-    , ledger: context.ledgers >>= find (\l -> l.ledgerId == ledgerId)
+    , ledger: activeLedger context ledgerId
     , balances: lookup ledgerId context.balances
-    , activeAccount: Nothing -- TODO: get active account from route
+    , activeAccount: activeAccount context ledgerId route
     }
+  activeLedger context ledgerId = context.ledgers >>= find (\l -> l.ledgerId == ledgerId)
+  activeAccount context ledgerId route = case route of
+    Routes.AccountTransactions id ->
+      activeLedger context ledgerId <#> _.result.accounts >>= find (\a -> a.accountId == id)
+    _ -> Nothing
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
   handleAction = case _ of
     Initialize -> do
@@ -90,19 +95,14 @@ routerComponent = connect selectAll $ H.mkComponent
       when (isNothing balances) do
         updateBalances ledgerId
     Receive { context, input: { ledgerId, route } } -> do
-      oldRoute <- H.gets _.route
-      oldLedgerId <- H.gets _.ledgerId
-
-      when (route /= oldRoute) do
-        H.modify_ _
-          { route = route
-          , activeAccount = Nothing -- TODO: recalc active account
-          }
       H.modify_ _
         { ledgerId = ledgerId
-        , ledger = context.ledgers >>= find (\l -> l.ledgerId == ledgerId)
+        , ledger = activeLedger context ledgerId
         , balances = lookup ledgerId context.balances
+        , route = route
+        , activeAccount = activeAccount context ledgerId route -- TODO: recalc active account
         }
+
     NavigateHome ->
       navigate $ Routes.Home
     NavigateAccountNew -> do
@@ -175,15 +175,16 @@ routerComponent = connect selectAll $ H.mkComponent
             ]
         , HH.div
             [ css "flex-grow justify-self-stretch relative p-4" ]
-            [ case state.route of
-              Routes.LedgerDashboard ->
+            [ case { route: state.route, account: state.activeAccount} of
+              { route: Routes.LedgerDashboard } ->
                 HH.slot_ (Proxy :: _ "dashboard") unit Component.Ledger.dashboardComponent unit
-              Routes.AccountTransactions accountId ->
-                HH.slot_ (Proxy :: _ "accountLedger") unit Component.Ledger.transactionsComponent unit
-              Routes.AccountEdit accountId ->
+              { route: Routes.AccountTransactions accountId, account: Just account } ->
+                HH.slot_ (Proxy :: _ "accountLedger") unit Component.Ledger.transactionsComponent { ledger, account }
+              { route: Routes.AccountEdit accountId } ->
                 HH.slot_ (Proxy :: _ "editAccount") unit Component.Ledger.editAccountComponent ({ ledger, accountId: Just accountId })
-              Routes.AccountNew ->
+              { route: Routes.AccountNew } ->
                 HH.slot_ (Proxy :: _ "editAccount") unit Component.Ledger.editAccountComponent ({ ledger, accountId: Nothing })
+              _ -> HH.text "account not found"
             ]
         ]
 
