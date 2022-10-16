@@ -2,22 +2,22 @@ module AP.UI.Component.Ledger.Router where
 
 import Prelude
 
-import AP.Data.Money (Money(..), toString)
-import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType(..), accountId, ledgerId)
-import AP.UI.Capability.ApiClient (class MonadApiClient, Balances, Ledger, getBalances, refreshLedgerList)
+import AP.Data.Money (toString)
+import AP.Domain.Ledger.Identifiers (AccountId, AccountType(..))
+import AP.UI.Capability.ApiClient (class MonadApiClient, Balances, Ledger, refreshLedgerList, updateBalances)
 import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Component.Ledger.Dashboard (dashboardComponent) as Component.Ledger
 import AP.UI.Component.Ledger.EditAccount (editAccountComponent) as Component.Ledger
 import AP.UI.Component.Ledger.Transactions (transactionsComponent) as Component.Ledger
 import AP.UI.Component.Utility (OpaqueSlot)
-import AP.UI.Part.Button (btn_, linkAction, linkAction_)
+import AP.UI.Part.Button (linkAction)
 import AP.UI.Route (LedgerRoute)
 import AP.UI.Route as Routes
 import AP.UI.Store as Store
 import Data.Array (filter, find, singleton)
 import Data.Map (lookup)
-import Data.Maybe (Maybe(..), fromMaybe, isJust, isNothing)
+import Data.Maybe (Maybe(..), fromMaybe, isNothing)
 import Effect.Aff.Class (class MonadAff)
 import Halogen as H
 import Halogen.HTML as HH
@@ -75,7 +75,7 @@ routerComponent = connect selectAll $ H.mkComponent
     { ledgerId
     , route
     , ledger: context.ledgers >>= find (\l -> l.ledgerId == ledgerId)
-    , balances: Nothing
+    , balances: lookup ledgerId context.balances
     , activeAccount: Nothing -- TODO: get active account from route
     }
   handleAction :: Action -> H.HalogenM State Action ChildSlots Void m Unit
@@ -84,30 +84,25 @@ routerComponent = connect selectAll $ H.mkComponent
       ledger <- H.gets _.ledger
       when (isNothing ledger) do
         refreshLedgerList
-      balances <- H.gets _.ledgerId >>= getBalances
-      H.modify_ _ { balances = Just balances }
+
+      ledgerId <- H.gets _.ledgerId
+      balances <- H.gets  _.balances
+      when (isNothing balances) do
+        updateBalances ledgerId
     Receive { context, input: { ledgerId, route } } -> do
       oldRoute <- H.gets _.route
       oldLedgerId <- H.gets _.ledgerId
-      ledger <- H.gets _.ledger
 
       when (route /= oldRoute) do
         H.modify_ _
           { route = route
           , activeAccount = Nothing -- TODO: recalc active account
           }
-
       H.modify_ _
         { ledgerId = ledgerId
         , ledger = context.ledgers >>= find (\l -> l.ledgerId == ledgerId)
+        , balances = lookup ledgerId context.balances
         }
-      when (oldLedgerId /= ledgerId) do
-        H.modify_ _
-          { balances = Nothing
-          }
-        balances <- getBalances ledgerId
-        H.modify_ _ { balances = Just balances }
-
     NavigateHome ->
       navigate $ Routes.Home
     NavigateAccountNew -> do

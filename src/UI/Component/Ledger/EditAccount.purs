@@ -3,18 +3,15 @@ module AP.UI.Component.Ledger.EditAccount where
 import Prelude
 
 import AP.UI.Capability.ApiClient (class MonadApiClient, Ledger, createAccount)
-import AP.UI.Capability.Navigate (class MonadNavigate)
-import AP.Domain.Ledger.Identifiers (AccountId(..), AccountType(..), unAccountId)
-import AP.UI.Capability.Navigate (navigate)
+import AP.UI.Capability.Navigate (class MonadNavigate, navigate)
+import AP.Domain.Ledger.Identifiers (AccountId, AccountType(..))
 import AP.UI.Component.HTML.Utils (css)
 import AP.UI.Form.Validation as V
 import AP.UI.Part.Button (btnSubmit_)
 import AP.UI.Part.Form (inputText_, radioGroup)
 import AP.UI.Route as Routes
-import Data.Argonaut (encodeJson, stringify)
-import Data.Const (Const)
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe, isNothing)
+import Data.Maybe (Maybe(..), fromMaybe)
 import Effect.Aff.Class (class MonadAff)
 import Formless as F
 import Halogen as H

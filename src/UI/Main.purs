@@ -6,6 +6,7 @@ import AP.UI.AppM (runAppM)
 import AP.UI.Component.Router as Router
 import AP.UI.Route (routeCodec)
 import AP.UI.Store (EnvironmentType(..), Store)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..))
 import Effect (Effect)
 import Effect.Aff (launchAff_)
@@ -29,6 +30,7 @@ main = HA.runHalogenAff do
       , psi
       , session: Nothing
       , ledgers: Nothing
+      , balances: empty
       }
 
   rootComponent <- runAppM initialStore Router.component

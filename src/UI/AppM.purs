@@ -112,5 +112,6 @@ instance MonadApiClient AppM where
       , accountType: newLedger.accountType
       }
     refreshLedgerList
-  getBalances ledgerId = do
-    postQuery ledgerId "GetBalancesV1"
+  updateBalances ledgerId = do
+    bal <- postQuery ledgerId "GetBalancesV1"
+    updateStore $ UpdateBalances ledgerId bal
